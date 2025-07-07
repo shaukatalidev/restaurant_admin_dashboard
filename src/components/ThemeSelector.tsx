@@ -188,13 +188,25 @@ export const ThemeSelector: React.FC = () => {
 
               {/* Preview Section */}
               {previewTheme !== currentTheme.id && (
-                <div className="mt-8 p-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl border border-blue-200">
-                  <div className="flex items-center justify-between">
+                <div
+                  className="sticky bottom-0 left-0 right-0  border-t border-blue-200 p-6 z-10"
+                  style={{ backgroundColor: selectedTheme.colors.background }}
+                >
+                  <div className="flex items-center justify-between max-w-6xl mx-auto">
                     <div>
-                      <h3 className="font-bold text-gray-900 mb-1">
+                      <h3
+                        className="font-bold text-gray-900 mb-1"
+                        style={{
+                          color: selectedTheme.colors.text,
+                          fontFamily: selectedTheme.fonts.heading,
+                        }}
+                      >
                         Preview: {selectedTheme.name}
                       </h3>
-                      <p className="text-gray-600 text-sm">
+                      <p
+                        className="text-gray-600 text-sm"
+                        style={{ color: selectedTheme.colors.textSecondary }}
+                      >
                         {selectedTheme.description}
                       </p>
                     </div>
