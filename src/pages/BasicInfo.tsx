@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { useRestaurant } from '../hooks/useRestaurant';
-import { Save, AlertCircle, CheckCircle, X } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { useRestaurant } from "../hooks/useRestaurant";
+import { Save, AlertCircle, CheckCircle, X } from "lucide-react";
 
 interface BasicInfoForm {
   name: string;
@@ -17,56 +17,59 @@ export const BasicInfo: React.FC = () => {
   const { restaurant, updateRestaurant, loading } = useRestaurant();
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [cuisineInput, setCuisineInput] = useState('');
+  const [cuisineInput, setCuisineInput] = useState("");
 
   const {
     register,
     handleSubmit,
     setValue,
     watch,
-    formState: { errors }
+    formState: { errors },
   } = useForm<BasicInfoForm>();
 
-  const watchedCuisineTypes = watch('cuisine_types', []);
+  const watchedCuisineTypes = watch("cuisine_types", []);
 
   useEffect(() => {
     if (restaurant) {
-      setValue('name', restaurant.name);
-      setValue('description', restaurant.description);
-      setValue('cuisine_types', restaurant.cuisine_types || []);
-      setValue('contact_number', restaurant.contact_number);
-      setValue('cost_for_two', restaurant.cost_for_two);
-      setValue('rating', restaurant.rating);
-      setValue('offer_text', restaurant.offer_text);
+      setValue("name", restaurant.name);
+      setValue("description", restaurant.description);
+      setValue("cuisine_types", restaurant.cuisine_types || []);
+      setValue("contact_number", restaurant.contact_number);
+      setValue("cost_for_two", restaurant.cost_for_two);
+      setValue("rating", restaurant.rating);
+      setValue("offer_text", restaurant.offer_text);
     }
   }, [restaurant, setValue]);
 
   const onSubmit = async (data: BasicInfoForm) => {
     setSaving(true);
     setSuccess(false);
-    
+
     try {
       await updateRestaurant(data);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (error) {
-      console.error('Error updating restaurant:', error);
+      console.error("Error updating restaurant:", error);
     } finally {
       setSaving(false);
     }
   };
 
   const addCuisineType = () => {
-    if (cuisineInput.trim() && !watchedCuisineTypes.includes(cuisineInput.trim())) {
+    if (
+      cuisineInput.trim() &&
+      !watchedCuisineTypes.includes(cuisineInput.trim())
+    ) {
       const newCuisineTypes = [...watchedCuisineTypes, cuisineInput.trim()];
-      setValue('cuisine_types', newCuisineTypes);
-      setCuisineInput('');
+      setValue("cuisine_types", newCuisineTypes);
+      setCuisineInput("");
     }
   };
 
   const removeCuisineType = (cuisine: string) => {
-    const newCuisineTypes = watchedCuisineTypes.filter(c => c !== cuisine);
-    setValue('cuisine_types', newCuisineTypes);
+    const newCuisineTypes = watchedCuisineTypes.filter((c) => c !== cuisine);
+    setValue("cuisine_types", newCuisineTypes);
   };
 
   if (loading) {
@@ -91,7 +94,9 @@ export const BasicInfo: React.FC = () => {
           <div className="flex">
             <CheckCircle className="h-5 w-5 text-green-400" />
             <div className="ml-3">
-              <p className="text-sm text-green-800">Restaurant information updated successfully!</p>
+              <p className="text-sm text-green-800">
+                Restaurant information updated successfully!
+              </p>
             </div>
           </div>
         </div>
@@ -100,17 +105,24 @@ export const BasicInfo: React.FC = () => {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
         <div className="bg-white shadow-lg rounded-2xl border border-blue-100">
           <div className="px-8 py-6 border-b border-blue-200 bg-gradient-to-r from-blue-50 to-purple-50">
-            <h3 className="text-xl font-semibold text-blue-900">Restaurant Details</h3>
+            <h3 className="text-xl font-semibold text-blue-900">
+              Restaurant Details
+            </h3>
           </div>
           <div className="px-8 py-6 space-y-8">
             <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
               <div>
-                <label htmlFor="name" className="block text-sm font-semibold text-blue-700 mb-2">
+                <label
+                  htmlFor="name"
+                  className="block text-sm font-semibold text-blue-700 mb-2"
+                >
                   Restaurant Name *
                 </label>
                 <input
                   type="text"
-                  {...register('name', { required: 'Restaurant name is required' })}
+                  {...register("name", {
+                    required: "Restaurant name is required",
+                  })}
                   className="block w-full px-4 py-3.5 border border-blue-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm transition-all duration-200 bg-white hover:border-blue-400"
                   placeholder="Enter restaurant name"
                 />
@@ -123,12 +135,15 @@ export const BasicInfo: React.FC = () => {
               </div>
 
               <div>
-                <label htmlFor="contact_number" className="block text-sm font-semibold text-blue-700 mb-2">
+                <label
+                  htmlFor="contact_number"
+                  className="block text-sm font-semibold text-blue-700 mb-2"
+                >
                   Contact Number
                 </label>
                 <input
                   type="tel"
-                  {...register('contact_number')}
+                  {...register("contact_number")}
                   className="block w-full px-4 py-3.5 border border-blue-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm transition-all duration-200 bg-white hover:border-blue-400"
                   placeholder="Enter contact number"
                 />
@@ -136,11 +151,14 @@ export const BasicInfo: React.FC = () => {
             </div>
 
             <div>
-              <label htmlFor="description" className="block text-sm font-semibold text-blue-700 mb-2">
+              <label
+                htmlFor="description"
+                className="block text-sm font-semibold text-blue-700 mb-2"
+              >
                 Description
               </label>
               <textarea
-                {...register('description')}
+                {...register("description")}
                 rows={4}
                 className="block w-full px-4 py-3.5 border border-blue-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm transition-all duration-200 bg-white hover:border-blue-400 resize-none"
                 placeholder="Describe your restaurant..."
@@ -173,7 +191,9 @@ export const BasicInfo: React.FC = () => {
                   type="text"
                   value={cuisineInput}
                   onChange={(e) => setCuisineInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addCuisineType())}
+                  onKeyPress={(e) =>
+                    e.key === "Enter" && (e.preventDefault(), addCuisineType())
+                  }
                   className="flex-1 px-4 py-3.5 border border-blue-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm transition-all duration-200 bg-white hover:border-blue-400"
                   placeholder="Add cuisine type"
                 />
@@ -187,21 +207,45 @@ export const BasicInfo: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-8 sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
               <div>
-                <label htmlFor="cost_for_two" className="block text-sm font-semibold text-blue-700 mb-2">
+                <label
+                  htmlFor="cost_for_two"
+                  className="block text-sm font-semibold text-blue-700 mb-2"
+                >
                   Cost for Two (₹)
                 </label>
                 <input
                   type="number"
-                  {...register('cost_for_two', { valueAsNumber: true })}
+                  inputMode="numeric"
+                  min={0}
+                  {...register("cost_for_two", {
+                    valueAsNumber: true,
+                    min: {
+                      value: 0,
+                      message: "Cost cannot be negative",
+                    },
+                    validate: (value) =>
+                      Number.isInteger(value) || "Cost must be a valid number",
+                  })}
+                  onBlur={(e) => {
+                    const parsed = parseInt(e.target.value, 10);
+                    const cleaned = isNaN(parsed) ? "" : parsed.toString();
+                    setValue(
+                      "cost_for_two",
+                      cleaned === "" ? 0 : parseInt(cleaned)
+                    );
+                  }}
                   className="block w-full px-4 py-3.5 border border-blue-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm transition-all duration-200 bg-white hover:border-blue-400"
                   placeholder="0"
                 />
               </div>
 
               <div>
-                <label htmlFor="rating" className="block text-sm font-semibold text-blue-700 mb-2">
+                <label
+                  htmlFor="rating"
+                  className="block text-sm font-semibold text-blue-700 mb-2"
+                >
                   Rating (0-5)
                 </label>
                 <input
@@ -209,12 +253,12 @@ export const BasicInfo: React.FC = () => {
                   step="0.1"
                   min="0"
                   max="5"
-                  {...register('rating', { valueAsNumber: true })}
+                  {...register("rating", { valueAsNumber: true })}
                   className="block w-full px-4 py-3.5 border border-blue-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm transition-all duration-200 bg-white hover:border-blue-400"
                   placeholder="0.0"
                 />
               </div>
-
+              {/* 
               <div>
                 <label htmlFor="offer_text" className="block text-sm font-semibold text-blue-700 mb-2">
                   Special Offer
@@ -225,7 +269,7 @@ export const BasicInfo: React.FC = () => {
                   className="block w-full px-4 py-3.5 border border-blue-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm transition-all duration-200 bg-white hover:border-blue-400"
                   placeholder="e.g., 10% OFF on all orders"
                 />
-              </div>
+              </div> */}
             </div>
           </div>
         </div>
@@ -241,7 +285,7 @@ export const BasicInfo: React.FC = () => {
             ) : (
               <Save className="h-5 w-5 mr-2" />
             )}
-            {saving ? 'Saving...' : 'Save Changes'}
+            {saving ? "Saving..." : "Save Changes"}
           </button>
         </div>
       </form>

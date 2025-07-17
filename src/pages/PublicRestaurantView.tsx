@@ -685,12 +685,17 @@ export const PublicRestaurantView: React.FC = () => {
                         />
                         About Us
                       </h3>
-                      <p
+                      <pre
                         className="leading-relaxed text-lg"
-                        style={{ color: currentTheme.colors.textSecondary }}
+                        style={{
+                          color: currentTheme.colors.textSecondary,
+                          fontFamily: "inherit",
+                          whiteSpace: "pre-wrap",
+                          wordWrap: "break-word",
+                        }}
                       >
                         {restaurant.description}
-                      </p>
+                      </pre>
                     </div>
                   )}
 

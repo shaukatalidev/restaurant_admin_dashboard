@@ -1,51 +1,74 @@
-import React, { useState } from 'react';
-import { useOpeningHours } from '../hooks/useOpeningHours';
-import { Save, Clock, CheckCircle } from 'lucide-react';
+import React, { useState } from "react";
+import { useOpeningHours } from "../hooks/useOpeningHours";
+import { Save, Clock, CheckCircle } from "lucide-react";
 
 const DAYS = [
-  'Sunday',
-  'Monday', 
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday'
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
 ];
 
 export const OpeningHours: React.FC = () => {
   const { hours, updateHours, loading } = useOpeningHours();
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [applyToAll, setApplyToAll] = useState(false);
+  const [commonOpenTime, setCommonOpenTime] = useState("09:00");
+  const [commonCloseTime, setCommonCloseTime] = useState("22:00");
 
   const handleToggleDay = async (dayOfWeek: number, isOpen: boolean) => {
     try {
-      await updateHours(dayOfWeek, { is_open: isOpen });
+      await updateHours(dayOfWeek, {
+        is_open: isOpen,
+        ...(applyToAll && isOpen
+          ? { open_time: commonOpenTime, close_time: commonCloseTime }
+          : {}),
+      });
     } catch (error) {
-      console.error('Error updating hours:', error);
+      console.error("Error updating hours:", error);
     }
   };
 
-  const handleTimeChange = async (dayOfWeek: number, field: 'open_time' | 'close_time', value: string) => {
+  const handleTimeChange = async (
+    dayOfWeek: number,
+    field: "open_time" | "close_time",
+    value: string
+  ) => {
     try {
       await updateHours(dayOfWeek, { [field]: value });
     } catch (error) {
-      console.error('Error updating hours:', error);
+      console.error("Error updating hours:", error);
     }
   };
 
   const saveAllChanges = async () => {
     setSaving(true);
     setSuccess(false);
-    
+
     try {
       // All changes are already saved individually, just show success
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (error) {
-      console.error('Error saving hours:', error);
+      console.error("Error saving hours:", error);
     } finally {
       setSaving(false);
     }
+  };
+
+  const applyCommonTimesToAll = () => {
+    hours.forEach((day) => {
+      if (day.is_open) {
+        updateHours(day.day_of_week, {
+          open_time: commonOpenTime,
+          close_time: commonCloseTime,
+        });
+      }
+    });
   };
 
   if (loading) {
@@ -70,11 +93,54 @@ export const OpeningHours: React.FC = () => {
           <div className="flex">
             <CheckCircle className="h-5 w-5 text-green-400" />
             <div className="ml-3">
-              <p className="text-sm text-green-800">Opening hours updated successfully!</p>
+              <p className="text-sm text-green-800">
+                Opening hours updated successfully!
+              </p>
             </div>
           </div>
         </div>
       )}
+
+      {/* Apply to All Time Section */}
+      <div className="bg-white shadow-md rounded-xl p-6 border border-gray-200 space-y-4">
+        <label className="flex items-center space-x-3">
+          <input
+            type="checkbox"
+            checked={applyToAll}
+            onChange={(e) => {
+              const checked = e.target.checked;
+              setApplyToAll(checked);
+              if (checked) {
+                applyCommonTimesToAll();
+              }
+            }}
+            className="h-5 w-5 text-blue-600 border-gray-300 rounded"
+          />
+          <span className="text-sm font-medium text-gray-700">
+            Apply these times to all open days
+          </span>
+        </label>
+        <div className="flex space-x-6 items-center">
+          <div className="flex items-center space-x-3">
+            <label className="text-sm font-medium text-gray-700">From:</label>
+            <input
+              type="time"
+              value={commonOpenTime}
+              onChange={(e) => setCommonOpenTime(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm"
+            />
+          </div>
+          <div className="flex items-center space-x-3">
+            <label className="text-sm font-medium text-gray-700">To:</label>
+            <input
+              type="time"
+              value={commonCloseTime}
+              onChange={(e) => setCommonCloseTime(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm"
+            />
+          </div>
+        </div>
+      </div>
 
       <div className="bg-white shadow-lg rounded-2xl border border-gray-100">
         <div className="px-8 py-6 border-b border-gray-200">
@@ -86,51 +152,74 @@ export const OpeningHours: React.FC = () => {
         <div className="px-8 py-6">
           <div className="space-y-6">
             {DAYS.map((day, index) => {
-              const dayHours = hours.find(h => h.day_of_week === index);
+              const dayHours = hours.find((h) => h.day_of_week === index);
               const isOpen = dayHours?.is_open || false;
-              
+
               return (
-                <div key={day} className="flex items-center justify-between p-6 border border-gray-200 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors duration-200">
+                <div
+                  key={day}
+                  className="flex items-center justify-between p-6 border border-gray-200 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors duration-200"
+                >
                   <div className="flex items-center space-x-6">
                     <div className="w-28">
-                      <span className="text-sm font-semibold text-gray-900">{day}</span>
+                      <span className="text-sm font-semibold text-gray-900">
+                        {day}
+                      </span>
                     </div>
                     <label className="flex items-center cursor-pointer">
                       <input
                         type="checkbox"
                         checked={isOpen}
-                        onChange={(e) => handleToggleDay(index, e.target.checked)}
+                        onChange={(e) =>
+                          handleToggleDay(index, e.target.checked)
+                        }
                         className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded transition-colors duration-200"
                       />
-                      <span className="ml-3 text-sm font-medium text-gray-700">Open</span>
+                      <span className="ml-3 text-sm font-medium text-gray-700">
+                        Open
+                      </span>
                     </label>
                   </div>
-                  
+
                   {isOpen && (
                     <div className="flex items-center space-x-6">
                       <div className="flex items-center space-x-3">
-                        <label className="text-sm font-medium text-gray-700">From:</label>
+                        <label className="text-sm font-medium text-gray-700">
+                          From:
+                        </label>
                         <input
                           type="time"
-                          value={dayHours?.open_time || '09:00'}
-                          onChange={(e) => handleTimeChange(index, 'open_time', e.target.value)}
+                          value={dayHours?.open_time || "09:00"}
+                          onChange={(e) =>
+                            handleTimeChange(index, "open_time", e.target.value)
+                          }
                           className="px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition-all duration-200 bg-white hover:border-gray-400"
                         />
                       </div>
                       <div className="flex items-center space-x-3">
-                        <label className="text-sm font-medium text-gray-700">To:</label>
+                        <label className="text-sm font-medium text-gray-700">
+                          To:
+                        </label>
                         <input
                           type="time"
-                          value={dayHours?.close_time || '22:00'}
-                          onChange={(e) => handleTimeChange(index, 'close_time', e.target.value)}
+                          value={dayHours?.close_time || "22:00"}
+                          onChange={(e) =>
+                            handleTimeChange(
+                              index,
+                              "close_time",
+                              e.target.value
+                            )
+                          }
                           className="px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition-all duration-200 bg-white hover:border-gray-400"
                         />
                       </div>
                     </div>
                   )}
-                  
+
                   {!isOpen && (
-                    <span className="text-sm text-gray-500 italic font-medium">Closed</span>
+                    <span className="text-sm text-gray-500 italic font-medium">
+                      Closed
+                    </span>
                   )}
                 </div>
               );
@@ -150,7 +239,7 @@ export const OpeningHours: React.FC = () => {
           ) : (
             <Save className="h-5 w-5 mr-2" />
           )}
-          {saving ? 'Saving...' : 'Confirm Changes'}
+          {saving ? "Saving..." : "Confirm Changes"}
         </button>
       </div>
     </div>
