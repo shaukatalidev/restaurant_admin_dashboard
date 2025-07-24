@@ -34,27 +34,30 @@ export const useGallery = () => {
     }
   };
 
-  const addImage = async (imageUrl: string, altText: string = '') => {
+  const addImages = async (image_url: string[], alt_text: string) => {
     try {
+      // Map each newImage to include restaurant_id and display_order
+      const imagesToInsert = image_url.map((img, index) => ({
+        restaurant_id: restaurant!.id,
+        image_url: img,
+        alt_text: alt_text,
+        display_order: images.length + index,
+      }));
+
       const { data, error } = await supabase
         .from('gallery_images')
-        .insert([{
-          restaurant_id: restaurant!.id,
-          image_url: imageUrl,
-          alt_text: altText,
-          display_order: images.length
-        }])
-        .select()
-        .single();
+        .insert(imagesToInsert)
+        .select();
 
       if (error) throw error;
-      setImages(prev => [...prev, data]);
+      setImages(prev => [...prev, ...data]);
       return data;
     } catch (err: any) {
       setError(err.message);
       throw err;
     }
   };
+
 
   const updateImage = async (id: string, updates: Partial<GalleryImage>) => {
     try {
@@ -94,7 +97,7 @@ export const useGallery = () => {
     loading,
     error,
     fetchImages,
-    addImage,
+    addImages,
     updateImage,
     deleteImage
   };

@@ -1,11 +1,19 @@
-import React, { useState, useRef } from 'react';
-import { Upload, Link, X, Image as ImageIcon, Loader2, Check, AlertCircle } from 'lucide-react';
-import { ImageUploadService, SAMPLE_IMAGES } from '../lib/imageUpload';
+import React, { useState, useRef } from "react";
+import {
+  Upload,
+  Link,
+  X,
+  Image as ImageIcon,
+  Loader2,
+  Check,
+  AlertCircle,
+} from "lucide-react";
+import { ImageUploadService, SAMPLE_IMAGES } from "../lib/imageUpload";
 
 interface ImageUploaderProps {
-  onImageSelect: (url: string) => void;
-  currentImage?: string;
-  folder: 'menu' | 'gallery' | 'offers';
+  onImageSelect: (urls: string[]) => void;
+  currentImage?: string | string[];
+  folder: "menu" | "gallery" | "offers";
   className?: string;
   placeholder?: string;
 }
@@ -14,56 +22,65 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   onImageSelect,
   currentImage,
   folder,
-  className = '',
-  placeholder = 'Upload or enter image URL'
+  className = "",
+  placeholder = "Upload or enter image URL",
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'upload' | 'url' | 'samples'>('upload');
+  const [activeTab, setActiveTab] = useState<"upload" | "url" | "samples">(
+    "upload"
+  );
   const [uploading, setUploading] = useState(false);
-  const [urlInput, setUrlInput] = useState('');
+  const [urlInput, setUrlInput] = useState("");
   const [urlValidating, setUrlValidating] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [dragOver, setDragOver] = useState(false);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const sampleImages = SAMPLE_IMAGES[folder] || SAMPLE_IMAGES.menu;
 
-  const handleFileSelect = async (file: File) => {
-    setError('');
+  const handleMultipleFiles = async (files: File[]) => {
+    setError("");
     setUploading(true);
 
     try {
-      // Compress image if it's large
-      const compressedFile = await ImageUploadService.compressImage(file);
-      
-      // Upload to Supabase
-      const result = await ImageUploadService.uploadFile(compressedFile, folder);
-      
-      onImageSelect(result.url);
+      const uploadPromises = files.map(async (file) => {
+        const compressedFile = await ImageUploadService.compressImage(file);
+        const result = await ImageUploadService.uploadFile(
+          compressedFile,
+          folder
+        );
+        return result.url;
+      });
+
+      const urls = await Promise.all(uploadPromises);
+      onImageSelect(urls);
       setIsOpen(false);
     } catch (err: any) {
-      setError(err.message || 'Upload failed');
+      setError(err.message || "One or more uploads failed");
     } finally {
       setUploading(false);
     }
   };
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      handleFileSelect(file);
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      handleMultipleFiles(Array.from(files));
     }
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
-    
-    const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith('image/')) {
-      handleFileSelect(file);
+
+    const files = Array.from(e.dataTransfer.files).filter((file) =>
+      file.type.startsWith("image/")
+    );
+
+    if (files.length > 0) {
+      handleMultipleFiles(files);
     } else {
-      setError('Please drop a valid image file');
+      setError("Please drop valid image files");
     }
   };
 
@@ -79,34 +96,32 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
 
   const handleUrlSubmit = async () => {
     if (!urlInput.trim()) return;
-    
-    setError('');
+
+    setError("");
     setUrlValidating(true);
 
     try {
-      // Validate URL format
       if (!ImageUploadService.validateUrl(urlInput)) {
-        throw new Error('Please enter a valid URL');
+        throw new Error("Please enter a valid URL");
       }
 
-      // Validate if URL points to an image
       const isValidImage = await ImageUploadService.validateImageUrl(urlInput);
       if (!isValidImage) {
-        throw new Error('URL does not point to a valid image');
+        throw new Error("URL does not point to a valid image");
       }
 
-      onImageSelect(urlInput);
+      onImageSelect([urlInput]);
       setIsOpen(false);
-      setUrlInput('');
+      setUrlInput("");
     } catch (err: any) {
-      setError(err.message || 'Invalid image URL');
+      setError(err.message || "Invalid image URL");
     } finally {
       setUrlValidating(false);
     }
   };
 
   const handleSampleSelect = (imageUrl: string) => {
-    onImageSelect(imageUrl);
+    onImageSelect([imageUrl]);
     setIsOpen(false);
   };
 
@@ -118,18 +133,31 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
         className={`relative group border-2 border-dashed border-gray-300 rounded-xl p-4 hover:border-blue-400 hover:bg-blue-50 transition-all duration-200 ${className}`}
       >
         {currentImage ? (
-          <div className="relative">
-            <img
-              src={currentImage}
-              alt="Current"
-              className="w-full h-32 object-cover rounded-lg"
-            />
-            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 rounded-lg transition-all duration-200 flex items-center justify-center">
-              <span className="text-white font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                Change Image
-              </span>
+          Array.isArray(currentImage) ? (
+            <div className="grid grid-cols-2 gap-2">
+              {currentImage.map((img, idx) => (
+                <img
+                  key={idx}
+                  src={img}
+                  alt="Selected"
+                  className="h-24 w-full object-cover rounded-lg"
+                />
+              ))}
             </div>
-          </div>
+          ) : (
+            <div className="relative">
+              <img
+                src={currentImage}
+                alt="Current"
+                className="w-full h-32 object-cover rounded-lg"
+              />
+              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 rounded-lg transition-all duration-200 flex items-center justify-center">
+                <span className="text-white font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  Change Image
+                </span>
+              </div>
+            </div>
+          )
         ) : (
           <div className="text-center py-8">
             <ImageIcon className="mx-auto h-12 w-12 text-gray-400 group-hover:text-blue-500 transition-colors duration-200" />
@@ -140,7 +168,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
         )}
       </button>
 
-      {/* Upload Modal */}
+      {/* Modal */}
       {isOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
@@ -160,45 +188,37 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
             {/* Tabs */}
             <div className="border-b border-gray-200">
               <div className="flex">
-                <button
-                  onClick={() => setActiveTab('upload')}
-                  className={`px-6 py-3 font-medium text-sm transition-colors duration-200 ${
-                    activeTab === 'upload'
-                      ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  <Upload className="h-4 w-4 inline mr-2" />
-                  Upload File
-                </button>
-                <button
-                  onClick={() => setActiveTab('url')}
-                  className={`px-6 py-3 font-medium text-sm transition-colors duration-200 ${
-                    activeTab === 'url'
-                      ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  <Link className="h-4 w-4 inline mr-2" />
-                  Image URL
-                </button>
-                <button
-                  onClick={() => setActiveTab('samples')}
-                  className={`px-6 py-3 font-medium text-sm transition-colors duration-200 ${
-                    activeTab === 'samples'
-                      ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  <ImageIcon className="h-4 w-4 inline mr-2" />
-                  Sample Images
-                </button>
+                {(["upload", "url", "samples"] as const).map((tab) => {
+                  const labels = {
+                    upload: "Upload File",
+                    url: "Image URL",
+                    samples: "Sample Images",
+                  };
+                  const icons = {
+                    upload: <Upload className="h-4 w-4 inline mr-2" />,
+                    url: <Link className="h-4 w-4 inline mr-2" />,
+                    samples: <ImageIcon className="h-4 w-4 inline mr-2" />,
+                  };
+                  return (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      className={`px-6 py-3 font-medium text-sm transition-colors duration-200 ${
+                        activeTab === tab
+                          ? "text-blue-600 border-b-2 border-blue-600 bg-blue-50"
+                          : "text-gray-600 hover:text-gray-900"
+                      }`}
+                    >
+                      {icons[tab]}
+                      {labels[tab]}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
             {/* Content */}
             <div className="p-6 max-h-96 overflow-y-auto">
-              {/* Error Message */}
               {error && (
                 <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center">
                   <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
@@ -207,36 +227,38 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
               )}
 
               {/* Upload Tab */}
-              {activeTab === 'upload' && (
-                <div>
+              {activeTab === "upload" && (
+                <>
                   <input
                     ref={fileInputRef}
                     type="file"
                     accept="image/*"
+                    multiple
                     onChange={handleFileInputChange}
                     className="hidden"
                   />
-                  
                   <div
                     onDrop={handleDrop}
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
                     className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ${
                       dragOver
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-300 hover:border-gray-400'
+                        ? "border-blue-500 bg-blue-50"
+                        : "border-gray-300 hover:border-gray-400"
                     }`}
                   >
                     {uploading ? (
                       <div className="py-8">
                         <Loader2 className="mx-auto h-12 w-12 text-blue-500 animate-spin" />
-                        <p className="mt-4 text-gray-600">Uploading image...</p>
+                        <p className="mt-4 text-gray-600">
+                          Uploading images...
+                        </p>
                       </div>
                     ) : (
                       <>
                         <Upload className="mx-auto h-12 w-12 text-gray-400" />
                         <p className="mt-4 text-lg font-medium text-gray-900">
-                          Drop your image here, or{' '}
+                          Drop images here, or{" "}
                           <button
                             onClick={() => fileInputRef.current?.click()}
                             className="text-blue-600 hover:text-blue-700 underline"
@@ -250,11 +272,11 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
                       </>
                     )}
                   </div>
-                </div>
+                </>
               )}
 
               {/* URL Tab */}
-              {activeTab === 'url' && (
+              {activeTab === "url" && (
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -267,7 +289,9 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
                         onChange={(e) => setUrlInput(e.target.value)}
                         placeholder="https://example.com/image.jpg"
                         className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        onKeyPress={(e) => e.key === 'Enter' && handleUrlSubmit()}
+                        onKeyPress={(e) =>
+                          e.key === "Enter" && handleUrlSubmit()
+                        }
                       />
                       <button
                         onClick={handleUrlSubmit}
@@ -282,15 +306,19 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
                       </button>
                     </div>
                   </div>
-                  
+
                   {urlInput && ImageUploadService.validateUrl(urlInput) && (
                     <div className="mt-4">
-                      <p className="text-sm font-medium text-gray-700 mb-2">Preview:</p>
+                      <p className="text-sm font-medium text-gray-700 mb-2">
+                        Preview:
+                      </p>
                       <img
                         src={urlInput}
                         alt="URL Preview"
                         className="w-full max-w-md h-48 object-cover rounded-lg border border-gray-200"
-                        onError={() => setError('Failed to load image from URL')}
+                        onError={() =>
+                          setError("Failed to load image from URL")
+                        }
                       />
                     </div>
                   )}
@@ -298,8 +326,8 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
               )}
 
               {/* Samples Tab */}
-              {activeTab === 'samples' && (
-                <div>
+              {activeTab === "samples" && (
+                <>
                   <p className="text-sm text-gray-600 mb-4">
                     Choose from our curated collection of sample images:
                   </p>
@@ -321,7 +349,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
                       </button>
                     ))}
                   </div>
-                </div>
+                </>
               )}
             </div>
           </div>
