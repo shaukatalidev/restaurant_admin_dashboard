@@ -152,6 +152,15 @@ export const PublicRestaurantView: React.FC = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [menuGalleryExpanded, setMenuGalleryExpanded] = useState(false);
+  
+  // Full-screen image viewer state
+  const [fullScreenImage, setFullScreenImage] = useState<{
+    url: string;
+    alt: string;
+    images: { url: string; alt: string; name?: string }[];
+    currentIndex: number;
+  } | null>(null);
+  
   const activeOffers = offers.filter((offer) => offer.is_active);
 
   // Convert URL-friendly name back to search for restaurant
@@ -268,6 +277,29 @@ export const PublicRestaurantView: React.FC = () => {
     }
   }, [images.length]);
 
+  // Keyboard event handling for full-screen viewer
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (!fullScreenImage) return;
+      
+      if (e.key === 'Escape') {
+        closeImageViewer();
+      } else if (e.key === 'ArrowLeft') {
+        navigateImage('prev');
+      } else if (e.key === 'ArrowRight') {
+        navigateImage('next');
+      }
+    };
+
+    if (fullScreenImage) {
+      document.addEventListener('keydown', handleKeyPress);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyPress);
+    };
+  }, [fullScreenImage]);
+
   // Filter items
   const filteredItems = items.filter((item) => {
     const matchesCategory =
@@ -297,6 +329,40 @@ export const PublicRestaurantView: React.FC = () => {
       element.scrollIntoView({ behavior: 'smooth' });
       setSidebarOpen(false);
     }
+  };
+
+  // Full-screen image viewer functions
+  const openImageViewer = (imageUrl: string, imageAlt: string, allImages: { url: string; alt: string; name?: string }[], startIndex: number) => {
+    setFullScreenImage({
+      url: imageUrl,
+      alt: imageAlt,
+      images: allImages,
+      currentIndex: startIndex
+    });
+    // Prevent body scroll
+    document.body.style.overflow = 'hidden';
+  };
+
+  const closeImageViewer = () => {
+    setFullScreenImage(null);
+    // Restore body scroll
+    document.body.style.overflow = 'unset';
+  };
+
+  const navigateImage = (direction: 'prev' | 'next') => {
+    if (!fullScreenImage) return;
+    
+    const newIndex = direction === 'next' 
+      ? (fullScreenImage.currentIndex + 1) % fullScreenImage.images.length
+      : (fullScreenImage.currentIndex - 1 + fullScreenImage.images.length) % fullScreenImage.images.length;
+    
+    const newImage = fullScreenImage.images[newIndex];
+    setFullScreenImage({
+      ...fullScreenImage,
+      url: newImage.url,
+      alt: newImage.alt,
+      currentIndex: newIndex
+    });
   };
 
   const getFeatureIcon = (feature: string) => {
@@ -934,7 +1000,14 @@ export const PublicRestaurantView: React.FC = () => {
                                       <img 
                                         src={item.image_url} 
                                         alt={item.name} 
-                                        className="w-full h-full object-cover" 
+                                        className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity duration-200" 
+                                        onClick={() => {
+                                          const menuImages = filteredItems
+                                            .filter(i => i.image_url)
+                                            .map(i => ({ url: i.image_url, alt: i.name, name: i.name }));
+                                          const currentIndex = menuImages.findIndex(img => img.url === item.image_url);
+                                          openImageViewer(item.image_url, item.name, menuImages, currentIndex);
+                                        }}
                                       />
                                       {item.is_special && (
                                         <div className="absolute top-2 right-2">
@@ -1027,7 +1100,13 @@ export const PublicRestaurantView: React.FC = () => {
                             <img 
                               src={filteredItems.find(item => item.image_url)?.image_url} 
                               alt="Menu item"
-                              className="w-full h-full object-cover"
+                              className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity duration-200"
+                              onClick={() => {
+                                const menuImages = filteredItems
+                                  .filter(i => i.image_url)
+                                  .map(i => ({ url: i.image_url, alt: i.name, name: i.name }));
+                                openImageViewer(filteredItems.find(item => item.image_url)!.image_url, filteredItems.find(item => item.image_url)!.name, menuImages, 0);
+                              }}
                             />
                           )}
                         </div>
@@ -1040,7 +1119,13 @@ export const PublicRestaurantView: React.FC = () => {
                               <img 
                                 src={filteredItems.filter(item => item.image_url)[1]?.image_url} 
                                 alt="Menu item"
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-cover cursor-pointer"
+                                onClick={() => {
+                                  const menuImages = filteredItems
+                                    .filter(i => i.image_url)
+                                    .map(i => ({ url: i.image_url, alt: i.name, name: i.name }));
+                                  openImageViewer(filteredItems.filter(item => item.image_url)[1]!.image_url, filteredItems.filter(item => item.image_url)[1]!.name, menuImages, 1);
+                                }}
                               />
                               <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center">
                                 <button 
@@ -1087,7 +1172,13 @@ export const PublicRestaurantView: React.FC = () => {
                               <img 
                                 src={item.image_url} 
                                 alt={item.name}
-                                className="w-full h-full object-cover" 
+                                className="w-full h-full object-cover cursor-pointer" 
+                                onClick={() => {
+                                  const menuImages = filteredItems
+                                    .filter(i => i.image_url)
+                                    .map(i => ({ url: i.image_url, alt: i.name, name: i.name }));
+                                  openImageViewer(item.image_url, item.name, menuImages, index);
+                                }}
                               />
                             </div>
                           ))}
@@ -1455,14 +1546,22 @@ export const PublicRestaurantView: React.FC = () => {
             {/* Horizontally Scrollable Gallery */}
             <div className="overflow-x-auto scrollbar-hide">
               <div className="flex space-x-4 pb-2" style={{ minWidth: 'max-content' }}>
-                {images.map((image) => (
+                {images.map((image, index) => (
                   <div key={image.id} 
                        className="flex-shrink-0 w-64 aspect-[4/3] rounded-lg overflow-hidden border hover:scale-105 transition-transform duration-300"
                        style={{ borderColor: currentTheme.colors.primary + "20" }}>
                     <img 
                       src={image.image_url} 
                       alt={image.alt_text} 
-                      className="w-full h-full object-cover" 
+                      className="w-full h-full object-cover cursor-pointer" 
+                      onClick={() => {
+                        const galleryImages = images.map(img => ({ 
+                          url: img.image_url, 
+                          alt: img.alt_text, 
+                          name: img.alt_text 
+                        }));
+                        openImageViewer(image.image_url, image.alt_text, galleryImages, index);
+                      }}
                     />
                   </div>
                 ))}
@@ -1576,6 +1675,67 @@ export const PublicRestaurantView: React.FC = () => {
         </footer>
         
       </div>
+
+      {/* Full-Screen Image Viewer Modal */}
+      {fullScreenImage && (
+        <div className="fixed inset-0 bg-black bg-opacity-95 z-[9999] flex items-center justify-center">
+          {/* Close Button */}
+          <button
+            onClick={closeImageViewer}
+            className="absolute top-4 right-4 z-50 p-3 rounded-full bg-black bg-opacity-50 text-white hover:bg-opacity-70 transition-all duration-200"
+          >
+            <X className="h-6 w-6" />
+          </button>
+
+          {/* Image Counter */}
+          <div className="absolute top-4 left-4 z-50 px-4 py-2 rounded-full bg-black bg-opacity-50 text-white text-sm">
+            {fullScreenImage.currentIndex + 1} of {fullScreenImage.images.length}
+          </div>
+
+          {/* Previous Button */}
+          {fullScreenImage.images.length > 1 && (
+            <button
+              onClick={() => navigateImage('prev')}
+              className="absolute left-4 top-1/2 transform -translate-y-1/2 z-50 p-3 rounded-full bg-black bg-opacity-50 text-white hover:bg-opacity-70 transition-all duration-200"
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </button>
+          )}
+
+          {/* Next Button */}
+          {fullScreenImage.images.length > 1 && (
+            <button
+              onClick={() => navigateImage('next')}
+              className="absolute right-4 top-1/2 transform -translate-y-1/2 z-50 p-3 rounded-full bg-black bg-opacity-50 text-white hover:bg-opacity-70 transition-all duration-200"
+            >
+              <ChevronRight className="h-6 w-6" />
+            </button>
+          )}
+
+          {/* Main Image */}
+          <div className="relative max-w-[90vw] max-h-[90vh] w-full h-full flex items-center justify-center">
+            <img
+              src={fullScreenImage.url}
+              alt={fullScreenImage.alt}
+              className="max-w-full max-h-full object-contain rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+
+          {/* Image Info */}
+          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-50 max-w-md text-center">
+            <div className="px-4 py-2 rounded-full bg-black bg-opacity-50 text-white text-sm">
+              {fullScreenImage.alt}
+            </div>
+          </div>
+
+          {/* Click outside to close */}
+          <div 
+            className="absolute inset-0 z-40" 
+            onClick={closeImageViewer}
+          ></div>
+        </div>
+      )}
     </div>
   );
 };
