@@ -1086,7 +1086,16 @@ export const PublicRestaurantView: React.FC = () => {
               )}
 
               {/* Menu Images Gallery */}
-              {filteredItems.filter(item => item.image_url).length > 0 && (
+              {(() => {
+                // Get menu-specific images from gallery
+                const menuGalleryImages = images.filter(img => 
+                  img.alt_text.toLowerCase().includes('menu')
+                );
+                
+                // Get individual menu item images
+                const menuItemImages = filteredItems.filter(item => item.image_url);
+                
+                return (menuGalleryImages.length > 0 || menuItemImages.length > 0) && (
                 <div className="mt-8 pt-6 border-t"
                      style={{ borderColor: currentTheme.colors.primary + "20" }}>
                   {!menuGalleryExpanded ? (
@@ -1096,47 +1105,55 @@ export const PublicRestaurantView: React.FC = () => {
                         {/* Main Image */}
                         <div className="col-span-2 rounded-lg overflow-hidden border"
                              style={{ borderColor: currentTheme.colors.primary + "20" }}>
-                          {filteredItems.find(item => item.image_url) && (
-                            <img 
-                              src={filteredItems.find(item => item.image_url)?.image_url} 
-                              alt="Menu item"
-                              className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity duration-200"
-                              onClick={() => {
-                                const menuImages = filteredItems
-                                  .filter(i => i.image_url)
-                                  .map(i => ({ url: i.image_url, alt: i.name, name: i.name }));
-                                openImageViewer(filteredItems.find(item => item.image_url)!.image_url, filteredItems.find(item => item.image_url)!.name, menuImages, 0);
-                              }}
-                            />
-                          )}
+                          {(() => {
+                            const allMenuImages = [
+                              ...menuGalleryImages.map(img => ({ url: img.image_url, alt: img.alt_text, name: img.alt_text, type: 'gallery' })),
+                              ...menuItemImages.map(item => ({ url: item.image_url, alt: item.name, name: item.name, type: 'item' }))
+                            ];
+                            
+                            return allMenuImages[0] && (
+                              <img 
+                                src={allMenuImages[0].url} 
+                                alt={allMenuImages[0].alt}
+                                className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity duration-200"
+                                onClick={() => {
+                                  openImageViewer(allMenuImages[0].url, allMenuImages[0].name, allMenuImages, 0);
+                                }}
+                              />
+                            );
+                          })()}
                         </div>
 
                         {/* Second Image with Overlay */}
                         <div className="relative rounded-lg overflow-hidden border"
                              style={{ borderColor: currentTheme.colors.primary + "20" }}>
-                          {filteredItems.filter(item => item.image_url)[1] && (
-                            <>
-                              <img 
-                                src={filteredItems.filter(item => item.image_url)[1]?.image_url} 
-                                alt="Menu item"
-                                className="w-full h-full object-cover cursor-pointer"
-                                onClick={() => {
-                                  const menuImages = filteredItems
-                                    .filter(i => i.image_url)
-                                    .map(i => ({ url: i.image_url, alt: i.name, name: i.name }));
-                                  openImageViewer(filteredItems.filter(item => item.image_url)[1]!.image_url, filteredItems.filter(item => item.image_url)[1]!.name, menuImages, 1);
-                                }}
-                              />
-                              <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center">
-                                <button 
-                                  onClick={() => setMenuGalleryExpanded(true)}
-                                  className="text-white font-bold text-sm"
-                                >
-                                  +{filteredItems.filter(item => item.image_url).length - 1} More...
-                                </button>
-                              </div>
-                            </>
-                          )}
+                          {(() => {
+                            const allMenuImages = [
+                              ...menuGalleryImages.map(img => ({ url: img.image_url, alt: img.alt_text, name: img.alt_text, type: 'gallery' })),
+                              ...menuItemImages.map(item => ({ url: item.image_url, alt: item.name, name: item.name, type: 'item' }))
+                            ];
+                            
+                            return allMenuImages[1] && (
+                              <>
+                                <img 
+                                  src={allMenuImages[1].url} 
+                                  alt={allMenuImages[1].alt}
+                                  className="w-full h-full object-cover cursor-pointer"
+                                  onClick={() => {
+                                    openImageViewer(allMenuImages[1].url, allMenuImages[1].name, allMenuImages, 1);
+                                  }}
+                                />
+                                <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center">
+                                  <button 
+                                    onClick={() => setMenuGalleryExpanded(true)}
+                                    className="text-white font-bold text-sm"
+                                  >
+                                    +{allMenuImages.length - 1} More...
+                                  </button>
+                                </div>
+                              </>
+                            );
+                          })()}
                         </div>
                       </div>
                     </div>
@@ -1163,31 +1180,77 @@ export const PublicRestaurantView: React.FC = () => {
                         </button>
                       </div>
                       
-                      <div className="overflow-x-auto scrollbar-hide">
-                        <div className="flex space-x-3 pb-2" style={{ minWidth: 'max-content' }}>
-                          {filteredItems.filter(item => item.image_url).map((item, index) => (
-                            <div key={`menu-img-${index}`} 
-                                 className="flex-shrink-0 w-32 h-32 rounded-lg overflow-hidden border hover:scale-105 transition-transform duration-300"
-                                 style={{ borderColor: currentTheme.colors.primary + "20" }}>
-                              <img 
-                                src={item.image_url} 
-                                alt={item.name}
-                                className="w-full h-full object-cover cursor-pointer" 
-                                onClick={() => {
-                                  const menuImages = filteredItems
-                                    .filter(i => i.image_url)
-                                    .map(i => ({ url: i.image_url, alt: i.name, name: i.name }));
-                                  openImageViewer(item.image_url, item.name, menuImages, index);
-                                }}
-                              />
+                      <div className="space-y-4">
+                        {/* Menu Showcase Images */}
+                        {menuGalleryImages.length > 0 && (
+                          <div>
+                            <h5 className="text-sm font-medium mb-3"
+                                style={{ color: currentTheme.colors.textSecondary }}>
+                              Menu Showcase ({menuGalleryImages.length})
+                            </h5>
+                            <div className="overflow-x-auto scrollbar-hide">
+                              <div className="flex space-x-3 pb-2" style={{ minWidth: 'max-content' }}>
+                                {menuGalleryImages.map((image, index) => (
+                                  <div key={`menu-gallery-${image.id}`} 
+                                       className="flex-shrink-0 w-32 h-32 rounded-lg overflow-hidden border hover:scale-105 transition-transform duration-300"
+                                       style={{ borderColor: currentTheme.colors.primary + "20" }}>
+                                    <img 
+                                      src={image.image_url} 
+                                      alt={image.alt_text}
+                                      className="w-full h-full object-cover cursor-pointer" 
+                                      onClick={() => {
+                                        const allMenuImages = [
+                                          ...menuGalleryImages.map(img => ({ url: img.image_url, alt: img.alt_text, name: img.alt_text, type: 'gallery' })),
+                                          ...menuItemImages.map(item => ({ url: item.image_url, alt: item.name, name: item.name, type: 'item' }))
+                                        ];
+                                        openImageViewer(image.image_url, image.alt_text, allMenuImages, index);
+                                      }}
+                                    />
+                                  </div>
+                                ))}
+                              </div>
                             </div>
-                          ))}
-                        </div>
+                          </div>
+                        )}
+
+                        {/* Menu Item Images */}
+                        {menuItemImages.length > 0 && (
+                          <div>
+                            <h5 className="text-sm font-medium mb-3"
+                                style={{ color: currentTheme.colors.textSecondary }}>
+                              Dish Images ({menuItemImages.length})
+                            </h5>
+                            <div className="overflow-x-auto scrollbar-hide">
+                              <div className="flex space-x-3 pb-2" style={{ minWidth: 'max-content' }}>
+                                {menuItemImages.map((item, index) => (
+                                  <div key={`menu-item-${item.id}`} 
+                                       className="flex-shrink-0 w-32 h-32 rounded-lg overflow-hidden border hover:scale-105 transition-transform duration-300"
+                                       style={{ borderColor: currentTheme.colors.primary + "20" }}>
+                                    <img 
+                                      src={item.image_url} 
+                                      alt={item.name}
+                                      className="w-full h-full object-cover cursor-pointer" 
+                                      onClick={() => {
+                                        const allMenuImages = [
+                                          ...menuGalleryImages.map(img => ({ url: img.image_url, alt: img.alt_text, name: img.alt_text, type: 'gallery' })),
+                                          ...menuItemImages.map(item => ({ url: item.image_url, alt: item.name, name: item.name, type: 'item' }))
+                                        ];
+                                        const globalIndex = menuGalleryImages.length + index;
+                                        openImageViewer(item.image_url, item.name, allMenuImages, globalIndex);
+                                      }}
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
                 </div>
-              )}
+                );
+              })()}
             </div>
           </div>
           </div>
