@@ -61,7 +61,7 @@ export default function SpinWheel() {
             outerBorderWidth={4}
             radiusLineColor={currentTheme.colors.secondary}
             radiusLineWidth={4}
-            fontSize={16}
+            fontSize={14}
             spinDuration={0.5}
             onStopSpinning={() => {
               setMustSpin(false);
