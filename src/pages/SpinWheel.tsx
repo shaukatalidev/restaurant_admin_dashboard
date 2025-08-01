@@ -1,80 +1,99 @@
-// SpinWheel.tsx
-import React, { useState } from "react";
+import { useState } from "react";
 import { Wheel } from "react-custom-roulette";
+import Confetti from "react-confetti";
+import useSound from "use-sound";
+
+import spinSound from "../assets/spin.mp3";
+import winSound from "../assets/win.mp3";
+import { useTheme } from "../contexts/ThemeContext";
 
 const data = [
-  {
-    option: "Prize 1",
-    style: { backgroundColor: "#ff4d4d", textColor: "white" },
-  },
-  {
-    option: "Prize 2",
-    style: { backgroundColor: "#4da6ff", textColor: "white" },
-  },
-  {
-    option: "Prize 3",
-    style: { backgroundColor: "#4dff88", textColor: "black" },
-  },
-  {
-    option: "Prize 4",
-    style: { backgroundColor: "#ffd24d", textColor: "black" },
-  },
-  {
-    option: "Prize 5",
-    style: { backgroundColor: "#b84dff", textColor: "white" },
-  },
-  {
-    option: "Prize 6",
-    style: { backgroundColor: "#00e6e6", textColor: "black" },
-  },
+  { option: "🎟️ ₹50 OFF Coupon", style: { backgroundColor: "#FF6F91" } },
+  { option: "🎟️ ₹100 OFF Coupon", style: { backgroundColor: "#FF9671" } },
+  { option: "🍽️ Buy 1 Get 1 Free", style: { backgroundColor: "#FFC75F" } },
+  { option: "🎟️ Free Dessert Coupon", style: { backgroundColor: "#F9F871" } },
+  { option: "🎟️ ₹200 OFF on ₹999", style: { backgroundColor: "#A0E7E5" } },
+  { option: "🎟️ 20% OFF Coupon", style: { backgroundColor: "#B4F8C8" } },
 ];
 
 export default function SpinWheel() {
   const [mustSpin, setMustSpin] = useState(false);
   const [prizeNumber, setPrizeNumber] = useState(0);
   const [result, setResult] = useState<string | null>(null);
+  const { currentTheme } = useTheme();
+  const [playSpin, { stop: stopSpin }] = useSound(spinSound, {
+    volume: 0.5,
+    loop: true,
+  });
+  const [playWin] = useSound(winSound, { volume: 0.7 });
 
   const handleSpinClick = () => {
-    const randomIndex = Math.floor(Math.random() * data.length);
-    setPrizeNumber(randomIndex);
+    const random = Math.floor(Math.random() * data.length);
+    setPrizeNumber(random);
     setMustSpin(true);
     setResult(null);
+    playSpin();
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white font-sans">
-      <h1 className="text-4xl mb-6 font-bold drop-shadow-lg">
-        🎡 Spin the Wheel
-      </h1>
-      <Wheel
-        mustStartSpinning={mustSpin}
-        prizeNumber={prizeNumber}
-        data={data}
-        backgroundColors={["#3e3e3e", "#df3428"]}
-        textColors={["#ffffff"]}
-        onStopSpinning={() => {
-          setMustSpin(false);
-          setResult(data[prizeNumber].option);
-        }}
-        outerBorderColor={"#eeeeee"}
-        outerBorderWidth={10}
-        radiusLineColor={"#ffffff"}
-        radiusLineWidth={2}
-        fontSize={16}
-        spinDuration={0.7}
-      />
-      <button
-        onClick={handleSpinClick}
-        className="mt-6 px-6 py-3 bg-yellow-400 hover:bg-yellow-300 text-black font-semibold rounded-lg shadow-md transition-all duration-300"
+    <div className="flex flex-col items-center justify-center">
+      <div
+        className={`w-full max-w-md p-4  rounded-2xl shadow-lg text-center bg-gradient-to-br ${currentTheme.gradients.header}`}
       >
-        Spin Now
-      </button>
+        <h2
+          style={{
+            color: currentTheme.colors.text,
+            fontFamily: currentTheme.fonts.heading,
+          }}
+          className="text-3xl  mb-6 font-bold"
+        >
+          🎡 Lucky Spin
+        </h2>
 
-      {result && (
-        <div className="mt-8 text-2xl bg-white text-black px-6 py-3 rounded shadow-lg animate-bounce">
-          🎉 You won <strong>{result}</strong>!
+        <div className="flex justify-center">
+          <Wheel
+            mustStartSpinning={mustSpin}
+            prizeNumber={prizeNumber}
+            data={data}
+            backgroundColors={["#3e3e3e", "#df3428"]}
+            textColors={[currentTheme.colors.text]}
+            outerBorderColor={currentTheme.colors.primary}
+            outerBorderWidth={4}
+            radiusLineColor={currentTheme.colors.secondary}
+            radiusLineWidth={4}
+            fontSize={16}
+            fontFamily="'Arial', sans-serif"
+            spinDuration={0.5}
+            onStopSpinning={() => {
+              setMustSpin(false);
+              setResult(data[prizeNumber].option);
+              stopSpin();
+              playWin();
+            }}
+          />
         </div>
-      )}
+
+        <button
+          onClick={handleSpinClick}
+          disabled={mustSpin}
+          className="mt-8 px-6 py-3 bg-white text-black rounded-full shadow-md hover:scale-105 transition-transform disabled:opacity-50"
+        >
+          {mustSpin ? "Spinning..." : "🚀 Spin Now"}
+        </button>
+
+        {result && (
+          <>
+            <div className="mt-6 text-lg bg-white text-purple-800 px-6 py-3 rounded-xl shadow-lg animate-bounce">
+              🎉 You won <span className="text-black">{result}</span>!
+            </div>
+            <Confetti
+              width={window.innerWidth}
+              height={window.innerHeight}
+              numberOfPieces={200}
+            />
+          </>
+        )}
+      </div>
     </div>
   );
 }

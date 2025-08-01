@@ -1,4 +1,4 @@
-import React from "react";
+// import React from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -9,10 +9,9 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { LoginForm } from "./components/auth/LoginForm";
-// import { SinglePageDashboard } from "./pages/SinglePageDashboard";
+import { SinglePageDashboard } from "./pages/SinglePageDashboard";
 import { ThemedRestaurantPreview } from "./pages/ThemedRestaurantPreview";
 import { PublicRestaurantView } from "./pages/PublicRestaurantView";
-import SpinWheel from "./pages/SpinWheel";
 
 function App() {
   return (
@@ -26,9 +25,7 @@ function App() {
               path="/dashboard"
               element={
                 <ProtectedRoute>
-                  {/* <SinglePageDashboard />
-                   */}
-                  <SpinWheel />
+                  <SinglePageDashboard />
                 </ProtectedRoute>
               }
             />
