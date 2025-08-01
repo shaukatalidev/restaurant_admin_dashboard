@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useMenu } from "../hooks/useMenu";
-import { Plus, Edit2, Trash2, X, CheckCircle } from "lucide-react";
+import { useGallery } from "../hooks/useGallery";
+import { Plus, Edit2, Trash2, X, CheckCircle, Images } from "lucide-react";
 import { ImageUploader } from "../components/ImageUploader";
 
 //extend type of newItem
@@ -28,6 +29,14 @@ export const MenuManagement: React.FC = () => {
     updateItem,
     deleteItem,
   } = useMenu();
+  
+  const {
+    images: galleryImages,
+    loading: galleryLoading,
+    addImages: addGalleryImages,
+    deleteImage: deleteGalleryImage,
+  } = useGallery();
+
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
 
   const [editItemData, setEditItemData] = useState<EditingItem | null>(null);
@@ -133,7 +142,34 @@ export const MenuManagement: React.FC = () => {
     }
   };
 
-  if (loading) {
+  const handleAddMenuImages = async (urls: string[]) => {
+    try {
+      await addGalleryImages(urls, "Menu showcase image");
+      setSuccess("Menu images uploaded successfully!");
+      setTimeout(() => setSuccess(""), 3000);
+    } catch (error) {
+      console.error("Error uploading menu images:", error);
+    }
+  };
+
+  const handleDeleteMenuImage = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this menu image?")) return;
+
+    try {
+      await deleteGalleryImage(id);
+      setSuccess("Menu image deleted successfully!");
+      setTimeout(() => setSuccess(""), 3000);
+    } catch (error) {
+      console.error("Error deleting menu image:", error);
+    }
+  };
+
+  // Filter to show only menu-related images
+  const menuImages = galleryImages.filter(img => 
+    img.alt_text.toLowerCase().includes('menu')
+  );
+
+  if (loading || galleryLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -181,6 +217,73 @@ export const MenuManagement: React.FC = () => {
             <Plus className="h-5 w-5 mr-2" />
             Add Category
           </button>
+        </div>
+      </div>
+
+      {/* Menu Images Upload */}
+      <div className="bg-white shadow-lg rounded-2xl border border-gray-100 p-8">
+        <div className="flex items-center gap-3 mb-6">
+          <Images className="h-6 w-6 text-blue-600" />
+          <h3 className="text-xl font-semibold text-gray-900">
+            Menu Images
+          </h3>
+        </div>
+        <p className="text-gray-600 mb-6">
+          Upload images that showcase your menu offerings, dishes, and food presentation. These images will appear in the menu section alongside individual menu items.
+        </p>
+        
+        <div className="space-y-6">
+          {/* Upload Section */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-3">
+              Upload Menu Showcase Images
+            </label>
+            <ImageUploader
+              onImageSelect={handleAddMenuImages}
+              folder="menu"
+              placeholder="Upload menu showcase images (multiple images supported)"
+              className="w-full"
+            />
+          </div>
+
+          {/* Current Images */}
+          {menuImages.length > 0 && (
+            <div>
+              <h4 className="text-lg font-medium text-gray-900 mb-4">
+                Current Menu Images ({menuImages.length})
+              </h4>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {menuImages.map((image) => (
+                  <div
+                    key={image.id}
+                    className="relative group bg-gray-50 rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-200"
+                  >
+                    <img
+                      src={image.image_url}
+                      alt={image.alt_text}
+                      className="w-full h-32 object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-center justify-center">
+                      <button
+                        onClick={() => handleDeleteMenuImage(image.id)}
+                        className="opacity-0 group-hover:opacity-100 p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-200"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {menuImages.length === 0 && (
+            <div className="text-center py-8 bg-gray-50 rounded-xl border border-gray-200">
+              <Images className="mx-auto h-12 w-12 text-gray-400 mb-3" />
+              <p className="text-gray-500">No menu images uploaded yet</p>
+              <p className="text-sm text-gray-400">Upload some images to showcase your menu offerings</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -392,7 +495,7 @@ export const MenuManagement: React.FC = () => {
                   </label>
                   <ImageUploader
                     onImageSelect={(url) =>
-                      setEditItemData({ ...editItemData, image_url: url })
+                      setEditItemData({ ...editItemData, image_url: url[0] })
                     }
                     currentImage={editItemData.image_url}
                     folder="menu"
@@ -539,7 +642,7 @@ export const MenuManagement: React.FC = () => {
                   </label>
                   <ImageUploader
                     onImageSelect={(url) =>
-                      setNewItem((prev) => ({ ...prev, image_url: url }))
+                      setNewItem((prev) => ({ ...prev, image_url: url[0] }))
                     }
                     currentImage={newItem.image_url}
                     folder="menu"
