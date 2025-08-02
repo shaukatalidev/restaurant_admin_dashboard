@@ -1,12 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import {
   MapPin,
-  Clock,
   Star,
-  Phone,
   Utensils,
   Home,
   Wind,
@@ -17,12 +16,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Award,
-  Navigation,
-  Calendar,
   Menu,
   Search,
   Flame,
-  Crown,
   Sparkles,
   Facebook,
   Twitter,
@@ -146,7 +142,7 @@ export const PublicRestaurantView: React.FC = () => {
 
   // Menu state
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [searchTerm, setSearchTerm] = useState("");
+  // const [searchTerm, setSearchTerm] = useState("");
 
   // Carousel state
   const [currentOfferIndex, setCurrentOfferIndex] = useState(0);
@@ -278,6 +274,26 @@ export const PublicRestaurantView: React.FC = () => {
     }
   }, [images.length]);
 
+  const navigateImage = useCallback(
+    (direction: "prev" | "next") => {
+      if (!fullScreenImage) return;
+
+      const newIndex =
+        direction === "next"
+          ? (fullScreenImage.currentIndex + 1) % fullScreenImage.images.length
+          : (fullScreenImage.currentIndex - 1 + fullScreenImage.images.length) %
+            fullScreenImage.images.length;
+
+      const newImage = fullScreenImage.images[newIndex];
+      setFullScreenImage({
+        ...fullScreenImage,
+        url: newImage.url,
+        alt: newImage.alt,
+        currentIndex: newIndex,
+      });
+    },
+    [fullScreenImage]
+  );
   // Keyboard event handling for full-screen viewer
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -299,7 +315,7 @@ export const PublicRestaurantView: React.FC = () => {
     return () => {
       document.removeEventListener("keydown", handleKeyPress);
     };
-  }, [fullScreenImage]);
+  }, [fullScreenImage, navigateImage]);
 
   // Filter items
   const filteredItems = items.filter((item) => {
@@ -308,21 +324,22 @@ export const PublicRestaurantView: React.FC = () => {
       (selectedCategory === "specials" && item.is_special) ||
       item.category_id === selectedCategory;
 
-    const matchesSearch =
-      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (item.description &&
-        item.description.toLowerCase().includes(searchTerm.toLowerCase()));
+    // const matchesSearch =
+    //   item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    //   (item.description &&
+    //     item.description.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    return item.is_available && matchesCategory && matchesSearch;
+    return item.is_available && matchesCategory;
+    // && matchesSearch;
   });
 
-  const nextOffer = () => {
-    setCurrentOfferIndex((prev) => (prev + 1) % offers.length);
-  };
+  // const nextOffer = () => {
+  //   setCurrentOfferIndex((prev) => (prev + 1) % offers.length);
+  // };
 
-  const prevOffer = () => {
-    setCurrentOfferIndex((prev) => (prev - 1 + offers.length) % offers.length);
-  };
+  // const prevOffer = () => {
+  //   setCurrentOfferIndex((prev) => (prev - 1 + offers.length) % offers.length);
+  // };
 
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
@@ -353,24 +370,6 @@ export const PublicRestaurantView: React.FC = () => {
     setFullScreenImage(null);
     // Restore body scroll
     document.body.style.overflow = "unset";
-  };
-
-  const navigateImage = (direction: "prev" | "next") => {
-    if (!fullScreenImage) return;
-
-    const newIndex =
-      direction === "next"
-        ? (fullScreenImage.currentIndex + 1) % fullScreenImage.images.length
-        : (fullScreenImage.currentIndex - 1 + fullScreenImage.images.length) %
-          fullScreenImage.images.length;
-
-    const newImage = fullScreenImage.images[newIndex];
-    setFullScreenImage({
-      ...fullScreenImage,
-      url: newImage.url,
-      alt: newImage.alt,
-      currentIndex: newIndex,
-    });
   };
 
   const getFeatureIcon = (feature: string) => {
@@ -514,6 +513,7 @@ export const PublicRestaurantView: React.FC = () => {
           <div className="flex items-center justify-end">
             <div className="flex items-center space-x-3">
               <button
+                aria-label="Previous Offer"
                 onClick={() => setSidebarOpen(true)}
                 className="p-2 rounded-lg transition-colors duration-200"
                 style={{ backgroundColor: currentTheme.colors.primary + "10" }}
@@ -557,6 +557,7 @@ export const PublicRestaurantView: React.FC = () => {
                 Navigation
               </h3>
               <button
+                aria-label="Close Sidebar"
                 onClick={() => setSidebarOpen(false)}
                 className="p-2 rounded-lg transition-colors duration-200"
                 style={{ backgroundColor: currentTheme.colors.primary + "10" }}
@@ -960,7 +961,7 @@ export const PublicRestaurantView: React.FC = () => {
                             }}
                           >
                             <img
-                              src={offer.image_url}
+                              src={JSON.parse(offer.image_url)[0]}
                               alt={offer.name}
                               className="w-full h-full object-cover"
                             />
@@ -975,6 +976,7 @@ export const PublicRestaurantView: React.FC = () => {
                   <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-1">
                     {activeOffers.map((_, dotIndex) => (
                       <button
+                        aria-label="Offer Dot"
                         key={dotIndex}
                         onClick={() => setCurrentOfferIndex(dotIndex)}
                         className={`w-2 h-2 rounded-full transition-all duration-300 ${
@@ -2194,6 +2196,7 @@ export const PublicRestaurantView: React.FC = () => {
                     />
                     <div className="flex justify-center lg:justify-end space-x-4 mr-4 ">
                       <a
+                        aria-label="Facebook Page"
                         href="#"
                         className="p-2 rounded-full transition-colors duration-200"
                         style={{
@@ -2204,6 +2207,7 @@ export const PublicRestaurantView: React.FC = () => {
                         <Facebook className="h-5 w-5" />
                       </a>
                       <a
+                        aria-label="Twitter Profile"
                         href="#"
                         className="p-2 rounded-full transition-colors duration-200"
                         style={{
@@ -2214,6 +2218,7 @@ export const PublicRestaurantView: React.FC = () => {
                         <Twitter className="h-5 w-5" />
                       </a>
                       <a
+                        aria-label="Instagram Profile"
                         href="#"
                         className="p-2 rounded-full transition-colors duration-200"
                         style={{
@@ -2224,6 +2229,7 @@ export const PublicRestaurantView: React.FC = () => {
                         <Instagram className="h-5 w-5" />
                       </a>
                       <a
+                        aria-label="YouTube Channel"
                         href="#"
                         className="p-2 rounded-full transition-colors duration-200"
                         style={{
@@ -2274,6 +2280,7 @@ export const PublicRestaurantView: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-95 z-[9999] flex items-center justify-center">
           {/* Close Button */}
           <button
+            aria-label="Close Image Viewer"
             onClick={closeImageViewer}
             className="absolute top-4 right-4 z-50 p-3 rounded-full bg-black bg-opacity-50 text-white hover:bg-opacity-70 transition-all duration-200"
           >
@@ -2289,6 +2296,7 @@ export const PublicRestaurantView: React.FC = () => {
           {/* Previous Button */}
           {fullScreenImage.images.length > 1 && (
             <button
+              aria-label="Previous Image"
               onClick={() => navigateImage("prev")}
               className="absolute left-4 top-1/2 transform -translate-y-1/2 z-50 p-3 rounded-full bg-black bg-opacity-50 text-white hover:bg-opacity-70 transition-all duration-200"
             >
@@ -2299,6 +2307,7 @@ export const PublicRestaurantView: React.FC = () => {
           {/* Next Button */}
           {fullScreenImage.images.length > 1 && (
             <button
+              aria-label="Next Image"
               onClick={() => navigateImage("next")}
               className="absolute right-4 top-1/2 transform -translate-y-1/2 z-50 p-3 rounded-full bg-black bg-opacity-50 text-white hover:bg-opacity-70 transition-all duration-200"
             >

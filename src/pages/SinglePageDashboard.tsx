@@ -123,6 +123,7 @@ export const SinglePageDashboard: React.FC = () => {
             <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-900 to-purple-900">
               <h2 className="text-white text-lg font-semibold">Menu</h2>
               <button
+                aria-label="hide sidebar"
                 onClick={() => setShowSidebar(false)}
                 className="text-white focus:outline-none"
               >
@@ -256,6 +257,7 @@ export const SinglePageDashboard: React.FC = () => {
         {/* Mobile top bar */}
         <div className="md:hidden bg-gradient-to-r from-blue-900 to-purple-900 px-4 py-3 flex items-center justify-between shadow-md">
           <button
+            aria-label="show side bar"
             onClick={() => setShowSidebar(true)}
             className="text-white focus:outline-none"
           >

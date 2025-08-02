@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useState, useEffect, useCallback } from 'react';
+
 import { supabase, Offer } from '../lib/supabase';
 import { useRestaurant } from './useRestaurant';
 
@@ -7,16 +8,11 @@ export const useOffers = () => {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
+
   const { restaurant } = useRestaurant();
 
-  useEffect(() => {
-    if (restaurant) {
-      fetchOffers();
-    }
-  }, [restaurant]);
 
-  const fetchOffers = async () => {
+  const fetchOffers = useCallback(async () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
@@ -32,9 +28,16 @@ export const useOffers = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [restaurant]);
 
-  const addOffer = async (offer: Omit<Offer, 'id' | 'created_at' | 'updated_at'>) => {
+  const addOffer = async (offer: {
+    name: string,
+    description: string,
+    badge_text: string,
+    image_url: string,
+    is_active: boolean,
+
+  }) => {
     try {
       const { data, error } = await supabase
         .from('offers')
@@ -98,6 +101,11 @@ export const useOffers = () => {
       throw err;
     }
   };
+  useEffect(() => {
+    if (restaurant) {
+      fetchOffers();
+    }
+  }, [fetchOffers, restaurant]);
 
   return {
     offers,
