@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "../contexts/ThemeContext";
 import SpinWheel from "./SpinWheel";
+import mainLogo from "../assets/image.png";
 
 const DAYS = [
   "Sunday",
@@ -961,9 +962,20 @@ export const PublicRestaurantView: React.FC = () => {
                             }}
                           >
                             <img
-                              src={JSON.parse(offer.image_url)[0]}
+                              src={
+                                Array.isArray(offer.image_url)
+                                  ? offer.image_url[0]
+                                  : typeof offer.image_url === "string" &&
+                                    offer.image_url.startsWith("[")
+                                  ? JSON.parse(offer.image_url)[0]
+                                  : offer.image_url
+                              }
                               alt={offer.name}
                               className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.onerror = null; // prevent infinite loop
+                                e.currentTarget.src = mainLogo; // fallback image path
+                              }}
                             />
                           </div>
                         )}
