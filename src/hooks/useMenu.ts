@@ -20,7 +20,7 @@ export const useMenu = () => {
   const fetchMenu = async () => {
     try {
       setLoading(true);
-      
+
       // Fetch categories
       const { data: categoriesData, error: categoriesError } = await supabase
         .from('menu_categories')

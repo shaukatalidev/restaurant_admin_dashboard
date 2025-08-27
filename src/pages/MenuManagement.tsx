@@ -1,8 +1,19 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from "react";
 import { useMenu } from "../hooks/useMenu";
 import { useGallery } from "../hooks/useGallery";
-import { Plus, Edit2, Trash2, X, CheckCircle, Images } from "lucide-react";
+import {
+  Plus,
+  Edit2,
+  Trash2,
+  X,
+  CheckCircle,
+  Images,
+  FileText,
+  Upload,
+} from "lucide-react";
 import { ImageUploader } from "../components/ImageUploader";
+import axios from "axios";
 
 //extend type of newItem
 
@@ -17,6 +28,19 @@ type EditingItem = {
   id: string;
 };
 
+type ExtractedMenuItem = {
+  item_name: string;
+  price: number;
+  description: string;
+};
+
+type ExtractedMenuData = [
+  {
+    category: string;
+    items: ExtractedMenuItem[];
+  }
+];
+
 export const MenuManagement: React.FC = () => {
   const {
     categories,
@@ -29,16 +53,19 @@ export const MenuManagement: React.FC = () => {
     updateItem,
     deleteItem,
   } = useMenu();
-  
+
   const {
     images: galleryImages,
     loading: galleryLoading,
     addImages: addGalleryImages,
     deleteImage: deleteGalleryImage,
   } = useGallery();
-
+  const [isAddingMenuItem, setIsAddingMenuItem] = useState(false);
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
-
+  const [editingItem, setEditingItem] = useState<{
+    catIndex: number;
+    itemIndex: number;
+  } | null>(null);
   const [editItemData, setEditItemData] = useState<EditingItem | null>(null);
 
   const [newCategoryName, setNewCategoryName] = useState("");
@@ -54,6 +81,14 @@ export const MenuManagement: React.FC = () => {
     is_available: true,
     is_special: false,
   });
+
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [pdfUploading, setPdfUploading] = useState(false);
+  const [pdfError, setPdfError] = useState("");
+  const [extractedData, setExtractedData] = useState<ExtractedMenuData | null>(
+    null
+  );
+  const [showExtractedData, setShowExtractedData] = useState(false);
 
   const handleAddCategory = async () => {
     if (!newCategoryName.trim()) return;
@@ -164,11 +199,112 @@ export const MenuManagement: React.FC = () => {
     }
   };
 
-  // Filter to show only menu-related images
-  const menuImages = galleryImages.filter(img => 
-    img.alt_text.toLowerCase().includes('menu')
-  );
+  const handlePdfFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
 
+      // Check if file is a PDF
+      if (file.type !== "application/pdf") {
+        setPdfError("Please upload a PDF file.");
+        setPdfFile(null);
+        return;
+      }
+
+      setPdfFile(file);
+      setPdfError("");
+    }
+  };
+
+  const handlePdfUpload = async () => {
+    if (!pdfFile) {
+      setPdfError("Please select a PDF file first");
+      return;
+    }
+
+    setPdfUploading(true);
+    setPdfError("");
+
+    try {
+      const formData = new FormData();
+      formData.append("file", pdfFile);
+
+      const response = await axios.post(
+        "http://localhost:8000/items/extract-text/",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      console.log("Extracted Text:", response.data);
+
+      if (response.data) {
+        setExtractedData(response.data.menu);
+        setShowExtractedData(true);
+      } else {
+        setPdfError("No menu data could be extracted from the PDF");
+      }
+    } catch (error) {
+      console.error("Error extracting menu data from PDF:", error);
+      setPdfError("Failed to extract menu data. Please try again.");
+    } finally {
+      setPdfUploading(false);
+    }
+  };
+
+  const handleAddExtractedMenu = async () => {
+    if (!extractedData) return;
+    setIsAddingMenuItem(true);
+    try {
+      // Process each category in the extracted data
+      for (const dataItem of extractedData) {
+        // Check if category already exists
+        let categoryId: string;
+        const existingCategory = categories.find(
+          (cat) => cat.name.toLowerCase() === dataItem.category.toLowerCase()
+        );
+
+        if (existingCategory) {
+          categoryId = existingCategory.id;
+        } else {
+          // Create new category
+          const newCategoryResponse = await addCategory(dataItem.category);
+          categoryId = newCategoryResponse.id;
+        }
+
+        // Add items to the category
+        for (const item of dataItem.items) {
+          await addItem({
+            name: item.item_name,
+            description: item.description || "",
+            price: item.price || 0,
+            category_id: categoryId,
+            image_url: "",
+            is_available: true,
+            is_special: false,
+          });
+        }
+      }
+
+      setSuccess("Menu items from PDF added successfully!");
+      setTimeout(() => setSuccess(""), 3000);
+      setShowExtractedData(false);
+      setExtractedData(null);
+      setPdfFile(null);
+    } catch (error) {
+      console.error("Error adding extracted menu items:", error);
+      setPdfError("Failed to add menu items. Please try again.");
+    } finally {
+      setIsAddingMenuItem(false);
+    }
+  };
+
+  // Filter to show only menu-related images
+  const menuImages = galleryImages.filter((img) =>
+    img.alt_text.toLowerCase().includes("menu")
+  );
   if (loading || galleryLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -197,6 +333,70 @@ export const MenuManagement: React.FC = () => {
         </div>
       )}
 
+      {/* PDF Menu Upload */}
+      <div className="bg-white shadow-lg rounded-2xl border border-gray-100 p-8">
+        <div className="flex items-center gap-3 mb-6">
+          <FileText className="h-6 w-6 text-blue-600" />
+          <h3 className="text-xl font-semibold text-gray-900">
+            Import Menu from PDF
+          </h3>
+        </div>
+        <p className="text-gray-600 mb-6">
+          Upload your existing menu in PDF format and we'll extract the items
+          automatically. The system will identify categories and menu items with
+          their prices.
+        </p>
+
+        <div className="space-y-6">
+          {/* PDF Upload Section */}
+          <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:border-blue-500 transition-all duration-200">
+            <input
+              type="file"
+              id="pdf-upload"
+              onChange={handlePdfFileChange}
+              accept=".pdf"
+              className="hidden"
+            />
+            <label
+              htmlFor="pdf-upload"
+              className="cursor-pointer flex flex-col items-center justify-center"
+            >
+              <FileText className="h-12 w-12 text-gray-400 mb-3" />
+              <span className="text-gray-700 font-medium">
+                {pdfFile ? pdfFile.name : "Click to upload menu PDF"}
+              </span>
+              <span className="text-sm text-gray-500 mt-1">PDF files only</span>
+            </label>
+          </div>
+
+          {pdfError && (
+            <div className="rounded-xl bg-red-50 border border-red-200 p-4">
+              <p className="text-sm text-red-800">{pdfError}</p>
+            </div>
+          )}
+
+          <button
+            onClick={handlePdfUpload}
+            disabled={!pdfFile || pdfUploading}
+            className={`inline-flex items-center px-6 py-3.5 border border-transparent text-sm font-semibold rounded-xl shadow-lg text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 hover:shadow-xl ${
+              !pdfFile || pdfUploading ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+          >
+            {pdfUploading ? (
+              <>
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                Processing...
+              </>
+            ) : (
+              <>
+                <Upload className="h-5 w-5 mr-2" />
+                Extract Menu from PDF
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
       {/* Add Category */}
       <div className="bg-white shadow-lg rounded-2xl border border-gray-100 p-8">
         <h3 className="text-xl font-semibold text-gray-900 mb-6">
@@ -224,14 +424,14 @@ export const MenuManagement: React.FC = () => {
       <div className="bg-white shadow-lg rounded-2xl border border-gray-100 p-8">
         <div className="flex items-center gap-3 mb-6">
           <Images className="h-6 w-6 text-blue-600" />
-          <h3 className="text-xl font-semibold text-gray-900">
-            Menu Images
-          </h3>
+          <h3 className="text-xl font-semibold text-gray-900">Menu Images</h3>
         </div>
         <p className="text-gray-600 mb-6">
-          Upload images that showcase your menu offerings, dishes, and food presentation. These images will appear in the menu section alongside individual menu items.
+          Upload images that showcase your menu offerings, dishes, and food
+          presentation. These images will appear in the menu section alongside
+          individual menu items.
         </p>
-        
+
         <div className="space-y-6">
           {/* Upload Section */}
           <div>
@@ -265,6 +465,8 @@ export const MenuManagement: React.FC = () => {
                     />
                     <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-center justify-center">
                       <button
+                        aria-label="Delete Menu Image"
+                        type="button"
                         onClick={() => handleDeleteMenuImage(image.id)}
                         className="opacity-0 group-hover:opacity-100 p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-200"
                       >
@@ -281,7 +483,9 @@ export const MenuManagement: React.FC = () => {
             <div className="text-center py-8 bg-gray-50 rounded-xl border border-gray-200">
               <Images className="mx-auto h-12 w-12 text-gray-400 mb-3" />
               <p className="text-gray-500">No menu images uploaded yet</p>
-              <p className="text-sm text-gray-400">Upload some images to showcase your menu offerings</p>
+              <p className="text-sm text-gray-400">
+                Upload some images to showcase your menu offerings
+              </p>
             </div>
           )}
         </div>
@@ -311,6 +515,8 @@ export const MenuManagement: React.FC = () => {
                     className="flex-1 px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white hover:border-gray-400"
                   />
                   <button
+                    aria-label="Save Category"
+                    type="button"
                     onClick={() => setEditingCategory(null)}
                     className="p-3 text-gray-400 hover:text-gray-600 transition-colors duration-200"
                   >
@@ -324,12 +530,16 @@ export const MenuManagement: React.FC = () => {
                   </h3>
                   <div className="flex items-center gap-2">
                     <button
+                      aria-label="Edit Category"
+                      type="button"
                       onClick={() => setEditingCategory(category.id)}
                       className="p-3 text-gray-400 hover:text-gray-600 transition-colors duration-200"
                     >
                       <Edit2 className="h-5 w-5" />
                     </button>
                     <button
+                      aria-label="Delete Category"
+                      type="button"
                       onClick={() => handleDeleteCategory(category.id)}
                       className="p-3 text-red-400 hover:text-red-600 transition-colors duration-200"
                     >
@@ -385,13 +595,16 @@ export const MenuManagement: React.FC = () => {
                         </div>
                         <div className="flex items-center gap-2 ml-6">
                           <button
-                            // onClick={() => setEditingItem(item.id)}
+                            aria-label="Edit Menu Item"
+                            type="button"
                             onClick={() => setEditItemData(item)}
                             className="p-3 text-gray-400 hover:text-gray-600 transition-colors duration-200"
                           >
                             <Edit2 className="h-5 w-5" />
                           </button>
                           <button
+                            aria-label="Delete Menu Item"
+                            type="button"
                             onClick={() => handleDeleteItem(item.id)}
                             className="p-3 text-red-400 hover:text-red-600 transition-colors duration-200"
                           >
@@ -696,6 +909,184 @@ export const MenuManagement: React.FC = () => {
                   className="px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
                 >
                   Add Item
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Extracted Menu Data Modal */}
+      {showExtractedData && extractedData && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-8 border w-full max-w-4xl shadow-2xl rounded-2xl bg-white">
+            <div className="mt-3">
+              <h3 className="text-xl font-semibold text-gray-900 mb-6">
+                Extracted Menu Data
+              </h3>
+
+              <div className="max-h-96 overflow-y-auto mb-6">
+                {extractedData.map((dataItem, catIndex) => (
+                  <div key={dataItem.category} className="mb-6">
+                    <h4 className="text-lg font-medium text-gray-900 mb-4 border-b pb-2">
+                      {dataItem.category}
+                    </h4>
+                    <div className="space-y-3">
+                      {dataItem.items.map((item, index) => {
+                        const isEditing =
+                          editingItem?.catIndex === catIndex &&
+                          editingItem?.itemIndex === index;
+
+                        return (
+                          <div
+                            key={index}
+                            className="flex justify-between items-start p-3 bg-gray-50 rounded-lg gap-4"
+                          >
+                            {isEditing ? (
+                              // --- Editable Mode ---
+                              <>
+                                <div className="flex-1 space-y-2">
+                                  <input
+                                    type="text"
+                                    value={item.item_name}
+                                    onChange={(e) => {
+                                      const updatedData = [...extractedData];
+                                      updatedData[catIndex].items[
+                                        index
+                                      ].item_name = e.target.value;
+                                      setExtractedData(
+                                        updatedData as ExtractedMenuData
+                                      );
+                                    }}
+                                    className="w-full border rounded-lg px-2 py-1 text-sm font-medium"
+                                  />
+                                  <textarea
+                                    value={item.description || ""}
+                                    onChange={(e) => {
+                                      const updatedData = [...extractedData];
+                                      updatedData[catIndex].items[
+                                        index
+                                      ].description = e.target.value;
+                                      setExtractedData(
+                                        updatedData as ExtractedMenuData
+                                      );
+                                    }}
+                                    className="w-full border rounded-lg px-2 py-1 text-sm text-gray-600"
+                                    placeholder="Add description"
+                                  />
+                                </div>
+
+                                <input
+                                  type="number"
+                                  value={item.price}
+                                  onChange={(e) => {
+                                    const updatedData = [...extractedData];
+                                    updatedData[catIndex].items[index].price =
+                                      Number(e.target.value);
+                                    setExtractedData(
+                                      updatedData as ExtractedMenuData
+                                    );
+                                  }}
+                                  className="w-24 border rounded-lg px-2 py-1 text-right font-bold text-green-600"
+                                />
+
+                                <div className="flex flex-col gap-2">
+                                  <button
+                                    onClick={() => setEditingItem(null)}
+                                    className="text-blue-600 hover:text-blue-800 text-sm"
+                                  >
+                                    Save
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      const updatedData = [...extractedData];
+                                      updatedData[catIndex].items.splice(
+                                        index,
+                                        1
+                                      );
+                                      if (
+                                        updatedData[catIndex].items.length === 0
+                                      ) {
+                                        updatedData.splice(catIndex, 1);
+                                      }
+                                      setExtractedData(
+                                        updatedData as ExtractedMenuData
+                                      );
+                                      setEditingItem(null);
+                                    }}
+                                    className="text-red-500 hover:text-red-700 text-sm"
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+                              </>
+                            ) : (
+                              // --- Normal View ---
+                              <>
+                                <div className="flex-1">
+                                  <p className="font-medium">
+                                    {item.item_name}
+                                  </p>
+                                  {item.description && (
+                                    <p className="text-sm text-gray-600">
+                                      {item.description}
+                                    </p>
+                                  )}
+                                </div>
+                                <div className="font-bold text-green-600">
+                                  ₹{item.price}
+                                </div>
+                                <button
+                                  onClick={() =>
+                                    setEditingItem({
+                                      catIndex,
+                                      itemIndex: index,
+                                    })
+                                  }
+                                  className="text-blue-600 hover:text-blue-800 text-sm"
+                                >
+                                  Edit
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <p className="text-sm text-gray-600 mb-6">
+                Review the extracted menu data above. You can edit or remove
+                items before adding them to your menu. New categories will be
+                created as needed.
+              </p>
+
+              <div className="flex justify-end gap-4">
+                <button
+                  type="button"
+                  aria-label="Cancel Extracted Menu"
+                  onClick={() => {
+                    setShowExtractedData(false);
+                    setExtractedData(null);
+                  }}
+                  className="px-6 py-3 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  aria-label="Add Extracted Menu"
+                  onClick={handleAddExtractedMenu}
+                  className="px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-xl shadow-lg"
+                >
+                  Add to Menu
+                  {isAddingMenuItem ? (
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white ml-3"></div>
+                  ) : (
+                    <Plus className="h-5 w-5 ml-2" />
+                  )}
                 </button>
               </div>
             </div>
