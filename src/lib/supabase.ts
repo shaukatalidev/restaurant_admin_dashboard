@@ -22,6 +22,7 @@ export interface Restaurant {
   offer_text: string;
   created_at: string;
   updated_at: string;
+  is_spin: boolean;
 }
 
 export interface RestaurantLocation {
@@ -79,6 +80,7 @@ export interface GalleryImage {
   image_url: string;
   alt_text: string;
   display_order: number;
+  is_banner: boolean;
 }
 
 export interface Offer {
