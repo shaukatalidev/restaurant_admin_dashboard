@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import { useOffers } from "../hooks/useOffers";
 import {
-  Plus,
   Edit2,
   Trash2,
   CheckCircle,
   Calendar,
   Award,
+  Gift,
+  Plus,
 } from "lucide-react";
 import { ImageUploader } from "../components/ImageUploader";
 
@@ -18,10 +19,15 @@ export const OffersManagement: React.FC = () => {
     updateOffer,
     deleteOffer,
     toggleOfferStatus,
+    isSpinWheelEnabled,
+    toggleSpinWheel,
   } = useOffers();
+
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingOffer, setEditingOffer] = useState<string | null>(null);
   const [success, setSuccess] = useState("");
+
+  const [spinWheelLoading, setSpinWheelLoading] = useState(false);
 
   const [newOffer, setNewOffer] = useState({
     name: "",
@@ -38,6 +44,25 @@ export const OffersManagement: React.FC = () => {
     image_url: "",
     is_active: true,
   });
+
+  const handleToggleSpinWheel = async () => {
+    setSpinWheelLoading(true);
+    try {
+      const newStatus = !isSpinWheelEnabled;
+      await toggleSpinWheel(newStatus);
+
+      setSuccess(
+        `Lucky Spin feature has been ${newStatus ? "enabled" : "disabled"}.`
+      );
+      setTimeout(() => setSuccess(""), 3000);
+    } catch (error) {
+      console.error("Error toggling spin wheel:", error);
+      setSuccess("Failed to update Lucky Spin status. Please try again.");
+      setTimeout(() => setSuccess(""), 3000);
+    } finally {
+      setSpinWheelLoading(false);
+    }
+  };
 
   const handleAddOffer = async () => {
     if (!newOffer.name.trim()) return;
@@ -128,8 +153,24 @@ export const OffersManagement: React.FC = () => {
         </div>
       )}
 
-      {/* Add Offer Button */}
-      <div className="flex justify-end">
+      <div className="flex justify-end items-center gap-4">
+        <button
+          onClick={handleToggleSpinWheel}
+          disabled={spinWheelLoading}
+          className={`inline-flex items-center px-6 py-3.5 border border-transparent text-sm font-semibold rounded-xl shadow-lg transition-all duration-300 hover:shadow-xl ${
+            isSpinWheelEnabled
+              ? "bg-gradient-to-r from-teal-500 to-cyan-600 text-white"
+              : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+          } ${spinWheelLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+        >
+          <Gift className="h-5 w-5 mr-2" />
+          {spinWheelLoading
+            ? "Updating..."
+            : isSpinWheelEnabled
+            ? "Disable Lucky Spin"
+            : "Enable Lucky Spin"}
+        </button>
+
         <button
           onClick={() => setShowAddForm(true)}
           className="inline-flex items-center px-6 py-3.5 border border-transparent text-sm font-semibold rounded-xl shadow-lg text-white bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 transition-all duration-200 hover:shadow-xl"

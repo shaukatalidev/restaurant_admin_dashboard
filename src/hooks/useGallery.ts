@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
 import { supabase, GalleryImage } from '../lib/supabase';
 import { useRestaurant } from './useRestaurant';
 
@@ -7,7 +6,6 @@ export const useGallery = () => {
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
   const { restaurant } = useRestaurant();
 
   useEffect(() => {
@@ -34,30 +32,31 @@ export const useGallery = () => {
     }
   };
 
-  const addImages = async (image_url: string[], alt_text: string) => {
+  const addImages = async (imageUrls: string[], altText: string, isBanner: boolean = false) => {
+    if (!restaurant?.id) return;
+
     try {
-      // Map each newImage to include restaurant_id and display_order
-      const imagesToInsert = image_url.map((img, index) => ({
-        restaurant_id: restaurant!.id,
-        image_url: img,
-        alt_text: alt_text,
+      const imagesToAdd = imageUrls.map((url, index) => ({
+        restaurant_id: restaurant.id,
+        image_url: url,
+        alt_text: altText,
         display_order: images.length + index,
+        is_banner: isBanner  
       }));
 
       const { data, error } = await supabase
         .from('gallery_images')
-        .insert(imagesToInsert)
+        .insert(imagesToAdd)
         .select();
 
       if (error) throw error;
+
       setImages(prev => [...prev, ...data]);
-      return data;
     } catch (err: any) {
       setError(err.message);
       throw err;
     }
   };
-
 
   const updateImage = async (id: string, updates: Partial<GalleryImage>) => {
     try {

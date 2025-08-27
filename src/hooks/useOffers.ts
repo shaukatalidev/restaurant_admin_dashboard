@@ -8,17 +8,65 @@ export const useOffers = () => {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Add spin wheel state
+  const [isSpinWheelEnabled, setIsSpinWheelEnabled] = useState(false);
 
   const { restaurant } = useRestaurant();
 
+  // Fetch spin wheel status
+  const fetchSpinWheelStatus = useCallback(async () => {
+    if (!restaurant?.id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('restaurants')
+        .select('is_spin')
+        .eq('id', restaurant.id)
+        .single();
+
+      if (error) throw error;
+      setIsSpinWheelEnabled(data?.is_spin || false);
+    } catch (err: any) {
+      console.error('Error fetching spin wheel status:', err);
+      setError(err.message);
+    }
+  }, [restaurant?.id]);
+
+  // Toggle spin wheel status
+  const toggleSpinWheel = async (enabled: boolean) => {
+    if (!restaurant?.id) {
+      throw new Error('Restaurant not found');
+    }
+
+    try {
+      const { error } = await supabase
+        .from('restaurants')
+        .update({ 
+          is_spin: enabled,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', restaurant.id);
+
+      if (error) throw error;
+      
+      setIsSpinWheelEnabled(enabled);
+      return true;
+    } catch (err: any) {
+      setError(err.message);
+      throw err;
+    }
+  };
 
   const fetchOffers = useCallback(async () => {
+    if (!restaurant?.id) return;
+    
     try {
       setLoading(true);
       const { data, error } = await supabase
         .from('offers')
         .select('*')
-        .eq('restaurant_id', restaurant!.id)
+        .eq('restaurant_id', restaurant.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -28,7 +76,7 @@ export const useOffers = () => {
     } finally {
       setLoading(false);
     }
-  }, [restaurant]);
+  }, [restaurant?.id]);
 
   const addOffer = async (offer: {
     name: string,
@@ -36,14 +84,17 @@ export const useOffers = () => {
     badge_text: string,
     image_url: string,
     is_active: boolean,
-
   }) => {
+    if (!restaurant?.id) {
+      throw new Error('Restaurant not found');
+    }
+
     try {
       const { data, error } = await supabase
         .from('offers')
         .insert([{
           ...offer,
-          restaurant_id: restaurant!.id
+          restaurant_id: restaurant.id
         }])
         .select()
         .single();
@@ -101,11 +152,14 @@ export const useOffers = () => {
       throw err;
     }
   };
+
+  // Fetch data when restaurant is available
   useEffect(() => {
-    if (restaurant) {
+    if (restaurant?.id) {
       fetchOffers();
+      fetchSpinWheelStatus();
     }
-  }, [fetchOffers, restaurant]);
+  }, [fetchOffers, fetchSpinWheelStatus, restaurant?.id]);
 
   return {
     offers,
@@ -115,6 +169,9 @@ export const useOffers = () => {
     addOffer,
     updateOffer,
     deleteOffer,
-    toggleOfferStatus
+    toggleOfferStatus,
+    isSpinWheelEnabled,
+    toggleSpinWheel,
+    fetchSpinWheelStatus,
   };
 };

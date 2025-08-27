@@ -50,6 +50,7 @@ interface Restaurant {
   rating: number;
   offer_text: string;
   theme_id: string;
+  is_spin: boolean;
 }
 
 interface RestaurantLocation {
@@ -97,6 +98,7 @@ interface GalleryImage {
   image_url: string;
   alt_text: string;
   display_order: number;
+  is_banner: boolean;
 }
 
 interface Offer {
@@ -140,6 +142,7 @@ export const PublicRestaurantView: React.FC = () => {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showSpinWheel, setShowSpinWheel] = useState(false);
 
   // Menu state
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
@@ -194,15 +197,16 @@ export const PublicRestaurantView: React.FC = () => {
       }
 
       setRestaurant(restaurantData);
+      setShowSpinWheel(restaurantData.is_spin || false);
 
-      // Fetch all related data
       const [
         locationResult,
         hoursResult,
         featuresResult,
         categoriesResult,
         itemsResult,
-        imagesResult,
+        bannerImagesResult, 
+        galleryImagesResult, 
         offersResult,
       ] = await Promise.all([
         supabase
@@ -233,6 +237,12 @@ export const PublicRestaurantView: React.FC = () => {
           .from("gallery_images")
           .select("*")
           .eq("restaurant_id", restaurantData.id)
+          .eq("is_banner", true)
+          .order("display_order"),
+        supabase
+          .from("gallery_images")
+          .select("*")
+          .eq("restaurant_id", restaurantData.id)
           .order("display_order"),
         supabase
           .from("offers")
@@ -247,8 +257,13 @@ export const PublicRestaurantView: React.FC = () => {
       setFeatures(featuresResult.data);
       setCategories(categoriesResult.data || []);
       setItems(itemsResult.data || []);
-      setImages(imagesResult.data || []);
+
+      setImages(bannerImagesResult.data || []);
+
       setOffers(offersResult.data || []);
+
+      console.log("Banner images for hero:", bannerImagesResult.data); 
+      console.log("All gallery images:", galleryImagesResult.data); 
     } catch (err: any) {
       setError(err.message || "Failed to load restaurant data");
     } finally {
@@ -739,7 +754,7 @@ export const PublicRestaurantView: React.FC = () => {
                 ₹{restaurant?.cost_for_two || 0} for two
               </span>
             </div>
-            {restaurant?.cuisine_types?.slice(0, 2).map((cuisine, index) => (
+            {restaurant?.cuisine_types?.map((cuisine, index) => (
               <span
                 key={index}
                 className="px-3 py-1 bg-black/30 backdrop-blur-sm text-white rounded-full text-sm"
@@ -1008,9 +1023,11 @@ export const PublicRestaurantView: React.FC = () => {
             </div>
           </div>
         )}
-        <div className="relative">
-          <SpinWheel />
-        </div>
+        {showSpinWheel && (
+          <div className="relative">
+            <SpinWheel />
+          </div>
+        )}
         {/* Our Delicious Menu */}
         {categories.length > 0 && (
           <div id="menu">
