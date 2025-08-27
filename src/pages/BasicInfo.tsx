@@ -19,6 +19,12 @@ export const BasicInfo: React.FC = () => {
   const [success, setSuccess] = useState(false);
   const [cuisineInput, setCuisineInput] = useState("");
 
+  useEffect(() => {
+  if (restaurant) {
+    console.log("Fetched restaurant.cuisine_types:", restaurant.cuisine_types);
+  }
+}, [restaurant]);
+
   const {
     register,
     handleSubmit,
@@ -56,7 +62,7 @@ export const BasicInfo: React.FC = () => {
     }
   };
 
-  const addCuisineType = () => {
+  const addCuisineType = async () => {
     if (
       cuisineInput.trim() &&
       !watchedCuisineTypes.includes(cuisineInput.trim())
@@ -64,12 +70,16 @@ export const BasicInfo: React.FC = () => {
       const newCuisineTypes = [...watchedCuisineTypes, cuisineInput.trim()];
       setValue("cuisine_types", newCuisineTypes);
       setCuisineInput("");
+      console.log("Cuisine types after add:", newCuisineTypes);
+      await updateRestaurant({ cuisine_types: newCuisineTypes });
     }
   };
 
-  const removeCuisineType = (cuisine: string) => {
+  const removeCuisineType = async (cuisine: string) => {
     const newCuisineTypes = watchedCuisineTypes.filter((c) => c !== cuisine);
     setValue("cuisine_types", newCuisineTypes);
+
+    await updateRestaurant({ cuisine_types: newCuisineTypes });
   };
 
   if (loading) {

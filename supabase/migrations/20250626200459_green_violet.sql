@@ -82,6 +82,7 @@ CREATE TABLE IF NOT EXISTS restaurants (
   cost_for_two integer DEFAULT 0,
   rating decimal(3,2) DEFAULT 0.0,
   offer_text text DEFAULT '',
+  is_spin boolean DEFAULT false,
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
@@ -146,7 +147,8 @@ CREATE TABLE IF NOT EXISTS gallery_images (
   restaurant_id uuid REFERENCES restaurants(id) ON DELETE CASCADE,
   image_url text NOT NULL,
   alt_text text DEFAULT '',
-  display_order integer DEFAULT 0
+  display_order integer DEFAULT 0,
+  is_banner boolean DEFAULT false
 );
 
 -- Enable RLS on all tables
