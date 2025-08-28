@@ -25,6 +25,10 @@ import {
   Instagram,
   Youtube,
   X,
+  Info,
+  Tag,
+  Phone,
+  Gift,
 } from "lucide-react";
 import { useTheme } from "../contexts/ThemeContext";
 import SpinWheel from "./SpinWheel";
@@ -115,19 +119,20 @@ export const PublicRestaurantView: React.FC = () => {
   React.useEffect(() => {
     const style = document.createElement("style");
     style.textContent = `
-      .scrollbar-hide {
-        -ms-overflow-style: none;
-        scrollbar-width: none;
-      }
-      .scrollbar-hide::-webkit-scrollbar {
-        display: none;
-      }
-    `;
+    .scrollbar-hide {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    .scrollbar-hide::-webkit-scrollbar {
+      display: none;
+    }
+  `;
     document.head.appendChild(style);
     return () => {
       document.head.removeChild(style);
     };
   }, []);
+
   const { restaurantName } = useParams<{ restaurantName: string }>();
   const { currentTheme } = useTheme();
 
@@ -205,8 +210,8 @@ export const PublicRestaurantView: React.FC = () => {
         featuresResult,
         categoriesResult,
         itemsResult,
-        bannerImagesResult, 
-        galleryImagesResult, 
+        bannerImagesResult,
+        galleryImagesResult,
         offersResult,
       ] = await Promise.all([
         supabase
@@ -261,9 +266,6 @@ export const PublicRestaurantView: React.FC = () => {
       setImages(bannerImagesResult.data || []);
 
       setOffers(offersResult.data || []);
-
-      console.log("Banner images for hero:", bannerImagesResult.data); 
-      console.log("All gallery images:", galleryImagesResult.data); 
     } catch (err: any) {
       setError(err.message || "Failed to load restaurant data");
     } finally {
@@ -490,48 +492,205 @@ export const PublicRestaurantView: React.FC = () => {
 
   return (
     <div
-      className="min-h-screen w-full"
+      className="min-h-screen w-full overflow-x-hidden"
       style={{ backgroundColor: currentTheme.colors.background }}
     >
       {/* Header */}
       <div
-        className="sticky top-0 z-50"
+        className="sticky top-0 z-50 backdrop-blur-md"
         style={{
-          backgroundColor: currentTheme.colors.surface,
-          borderBottom: `1px solid ${currentTheme.colors.primary}20`,
+          backgroundColor: currentTheme.colors.surface + "F0", // Semi-transparent for glassmorphism
+          borderBottom: `2px solid ${currentTheme.colors.primary}30`,
+          boxShadow: `0 4px 20px ${currentTheme.colors.primary}10`,
         }}
       >
-        <div className="px-4 py-3 flex items-center justify-between">
-          <h1
-            className="text-lg font-bold"
-            style={{
-              color: currentTheme.colors.text,
-              fontFamily: currentTheme.fonts.heading,
-            }}
-          >
-            {restaurant?.name}
-          </h1>
-          {/* <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-                <div className="flex items-center">
-                <Star className="h-4 w-4 mr-1 fill-current" style={{ color: currentTheme.colors.accent }} />
-                <span className="text-sm font-semibold" style={{ color: currentTheme.colors.text }}>
-                  {restaurant?.rating || "0.0"}
-                </span>
+        <div className="max-w-full mx-auto px-2 sm:px-4 py-2">
+          {" "}
+          {/* Desktop Layout */}
+          <div className="hidden lg:flex items-center justify-between">
+            {/* Left Section - Restaurant Info - Moved more to left */}
+            <div className="flex items-center space-x-6 flex-shrink-0">
+              <div>
+                <h1
+                  className="text-xl xl:text-3xl font-bold mb-1"
+                  style={{
+                    color: currentTheme.colors.text,
+                    fontFamily: currentTheme.fonts.heading,
+                  }}
+                >
+                  {restaurant?.name}
+                </h1>
+                <div className="flex items-center space-x-4 text-sm">
+                  <div className="flex items-center space-x-1">
+                    <Star
+                      className="h-3 w-3 xl:h-4 xl:w-4 fill-current"
+                      style={{ color: currentTheme.colors.accent }}
+                    />
+                    <span
+                      className="font-semibold"
+                      style={{ color: currentTheme.colors.text }}
+                    >
+                      {restaurant?.rating ?? "0.0"}
+                    </span>
+                    <span
+                      className="opacity-70"
+                      style={{ color: currentTheme.colors.text }}
+                    >
+                      (22 Reviews)
+                    </span>
+                  </div>
+
+                  {location && (
+                    <div className="flex items-center space-x-1">
+                      <MapPin
+                        className="h-3 w-3 xl:h-4 xl:w-4"
+                        style={{ color: currentTheme.colors.primary }}
+                      />
+                      <span
+                        className="opacity-70 text-xs xl:text-sm"
+                        style={{ color: currentTheme.colors.text }}
+                      >
+                        {location.city}, {location.state}
+                      </span>
+                    </div>
+                  )}
+
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                      isOpenNow
+                        ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
+                        : "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300"
+                    }`}
+                  >
+                    {isOpenNow ? "Open Now" : "Closed"}
+                    {(() => {
+                      const todayHours = hours.find(
+                        (h) => h.day_of_week === new Date().getDay()
+                      );
+                      return todayHours && isOpenNow ? (
+                        <span className="ml-1 opacity-70">
+                          • Closes {todayHours.close_time}
+                        </span>
+                      ) : null;
+                    })()}
+                  </span>
                 </div>
-              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                isOpenNow ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-              }`}>
+              </div>
+            </div>
+
+            {/* Right Section - Navigation with Gallery Button - Moved more to right */}
+            <nav className="flex items-center space-x-1 flex-shrink-0 ml-auto overflow-hidden">
+              {[
+                {
+                  id: "restaurant-info",
+                  label: "Info",
+                  icon: Info,
+                  color: currentTheme.colors.primary,
+                },
+                {
+                  id: "menu",
+                  label: "Menu",
+                  icon: Utensils,
+                  show: categories.length > 0,
+                  color: currentTheme.colors.success,
+                },
+                {
+                  id: "special-offers",
+                  label: "Offers",
+                  icon: Tag,
+                  show: activeOffers.length > 0,
+                  color: currentTheme.colors.accent,
+                },
+                {
+                  id: "gallery",
+                  label: "Gallery",
+                  icon: Star,
+                  show: images.length > 0,
+                  color: currentTheme.colors.accent,
+                },
+                {
+                  id: "contact-location",
+                  label: "Contact",
+                  icon: Phone,
+                  color: currentTheme.colors.error,
+                },
+              ]
+                .filter((item) => item.show !== false)
+                .map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => scrollToSection(item.id)}
+                    className="flex items-center space-x-1 xl:space-x-2 px-2 xl:px-4 py-1.5 xl:py-2 rounded-lg text-xs xl:text-sm font-medium transition-all duration-200 hover:scale-105 whitespace-nowrap"
+                    style={{
+                      color: currentTheme.colors.text,
+                      backgroundColor: "transparent",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor =
+                        (item.color || currentTheme.colors.primary) + "15";
+                      e.currentTarget.style.color =
+                        item.color || currentTheme.colors.primary;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "transparent";
+                      e.currentTarget.style.color = currentTheme.colors.text;
+                    }}
+                  >
+                    <item.icon
+                      className="h-3 w-3 xl:h-4 xl:w-4"
+                      style={{
+                        color: item.color || currentTheme.colors.primary,
+                      }}
+                    />
+                    <span className="hidden lg:inline">{item.label}</span>
+                  </button>
+                ))}
+            </nav>
+          </div>
+          {/* Mobile/Tablet Layout */}
+          <div className="lg:hidden flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <h1
+                className="text-xl md:text-2xl font-bold"
+                style={{
+                  color: currentTheme.colors.text,
+                  fontFamily: currentTheme.fonts.heading,
+                }}
+              >
+                {restaurant?.name}
+              </h1>
+
+              <div className="md:flex items-center space-x-3 hidden">
+                <div className="flex items-center space-x-1">
+                  <Star
+                    className="h-4 w-4 fill-current"
+                    style={{ color: currentTheme.colors.accent }}
+                  />
+                  <span
+                    className="text-sm font-semibold"
+                    style={{ color: currentTheme.colors.text }}
+                  >
+                    {restaurant?.rating ?? "0.0"}
+                  </span>
+                </div>
+
+                <span
+                  className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    isOpenNow
+                      ? "bg-green-100 text-green-700"
+                      : "bg-red-100 text-red-700"
+                  }`}
+                >
                   {isOpenNow ? "Open" : "Closed"}
-              </span>
-                </div>
-          </div> */}
-          <div className="flex items-center justify-end">
-            <div className="flex items-center space-x-3">
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2">
               <button
-                aria-label="Previous Offer"
+                aria-label="Open Menu"
                 onClick={() => setSidebarOpen(true)}
-                className="p-2 rounded-lg transition-colors duration-200"
+                className="p-2.5 rounded-lg transition-colors duration-200"
                 style={{ backgroundColor: currentTheme.colors.primary + "10" }}
               >
                 <Menu
@@ -732,302 +891,772 @@ export const PublicRestaurantView: React.FC = () => {
       )}
 
       {/* Hero Image with Restaurant Info */}
-      <div className="relative h-64">
+      <div className="relative h-64 md:h-80 lg:h-[32rem] rounded-xl overflow-hidden shadow-2xl group">
         {images.length > 0 ? (
-          <img
-            src={images[currentImageIndex]?.image_url}
-            alt={images[currentImageIndex]?.alt_text}
-            className="w-full h-full object-cover"
-          />
+          <>
+            <img
+              src={images[currentImageIndex]?.image_url}
+              alt={images[currentImageIndex]?.alt_text}
+              className="w-full h-full object-cover object-center transition-all duration-700 group-hover:scale-110"
+            />
+            {/* Image Navigation Dots */}
+            {images.length > 1 && (
+              <div className="absolute top-4 right-4 flex space-x-1">
+                {images.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentImageIndex(index)}
+                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                      index === currentImageIndex
+                        ? "bg-white scale-125"
+                        : "bg-white/50 hover:bg-white/80"
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
+          </>
         ) : (
           <div
             className={`w-full h-full bg-gradient-to-br ${currentTheme.gradients.hero}`}
-          ></div>
+          />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
 
-        <div className="absolute bottom-4 left-4 right-4 text-white">
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center bg-black/30 backdrop-blur-sm rounded-full px-3 py-1">
-              <IndianRupee className="h-4 w-4 mr-1" />
-              <span className="font-semibold text-sm">
-                ₹{restaurant?.cost_for_two || 0} for two
-              </span>
+        {/* Enhanced Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-black/20" />
+
+        {/* Top Section - Status, Rating and Price */}
+        <div className="absolute top-6 left-6 right-6 flex items-center justify-between">
+          {/* Left side - Status and Rating */}
+          <div className="flex items-center space-x-3">
+            <div
+              className={`px-4 py-2 rounded-full backdrop-blur-md shadow-lg font-semibold text-sm ${
+                isOpenNow
+                  ? "bg-green-500/90 text-white"
+                  : "bg-red-500/90 text-white"
+              }`}
+            >
+              <div className="flex items-center space-x-2">
+                <div
+                  className={`w-2 h-2 rounded-full ${
+                    isOpenNow ? "bg-green-200" : "bg-red-200"
+                  } animate-pulse`}
+                />
+                <span>{isOpenNow ? "Open Now" : "Closed"}</span>
+              </div>
             </div>
-            {restaurant?.cuisine_types?.map((cuisine, index) => (
-              <span
-                key={index}
-                className="px-3 py-1 bg-black/30 backdrop-blur-sm text-white rounded-full text-sm"
-              >
-                {cuisine}
+
+            <div className="flex items-center bg-black/60 backdrop-blur-md rounded-full px-4 py-2 shadow-lg">
+              <Star
+                className="h-4 w-4 mr-1 fill-current"
+                style={{ color: currentTheme.colors.accent || "#fbbf24" }}
+              />
+              <span className="text-white font-semibold text-sm">
+                {restaurant?.rating || "5.0"}
               </span>
-            ))}
+              <span className="text-white/80 text-xs ml-1">(22)</span>
+            </div>
+          </div>
+
+          {/* Right side - Price */}
+          <div className="flex items-center bg-gradient-to-r from-green-500/90 to-green-600/90 backdrop-blur-md rounded-full px-6 py-3 shadow-lg">
+            <IndianRupee className="h-5 w-5 mr-2 text-white" />
+            <div className="text-white">
+              <span className="font-bold text-lg">
+                ₹{restaurant?.cost_for_two || 0}
+              </span>
+              <span className="text-sm opacity-90 ml-1">for two</span>
+            </div>
           </div>
         </div>
       </div>
 
       <div className="space-y-4">
         {/* Restaurant Information Section */}
-        <div
-          id="restaurant-info"
-          className="bg-white shadow-lg border border-gray-100 p-4"
-          style={{
-            backgroundColor: currentTheme.colors.surface,
-            borderColor: currentTheme.colors.primary + "10",
-          }}
-        >
-          <div className="flex items-start justify-between mb-2">
-            <div className="flex-1">
-              <h2
-                className="text-xl font-bold mb-1"
-                style={{
-                  color: currentTheme.colors.text,
-                  fontFamily: currentTheme.fonts.heading,
-                }}
-              >
-                {restaurant?.name}
-              </h2>
-              <p
-                className="text-sm font-medium mb-1"
-                style={{ color: currentTheme.colors.textSecondary }}
-              >
-                {location?.city && location?.state
-                  ? `${location.city}, ${location.state}`
-                  : "Location"}
-              </p>
-              {location && (
-                <p
-                  className="text-xs leading-relaxed"
-                  style={{ color: currentTheme.colors.textSecondary }}
-                >
-                  {[
-                    location.street,
-                    location.city,
-                    location.state,
-                    location.zip_code,
-                    "India",
-                  ]
-                    .filter(Boolean)
-                    .join(", ")}
-                </p>
-              )}
-            </div>
+        <div className="space-y-6">
+          <div
+            id="restaurant-info"
+            className="bg-white shadow-md rounded-xl border overflow-hidden"
+            style={{
+              backgroundColor: currentTheme.colors.surface,
+              borderColor: currentTheme.colors.primary + "10",
+            }}
+          >
+            {/* Header Section with Background */}
             <div
-              className={`px-4 py-2 rounded-full font-semibold text-sm ${
-                isOpenNow ? "text-white" : "text-white"
-              }`}
+              className="px-6 py-4 border-b"
               style={{
-                backgroundColor: isOpenNow
-                  ? currentTheme.colors.success || "#22c55e"
-                  : currentTheme.colors.error || "#ef4444",
+                backgroundColor: currentTheme.colors.background,
+                borderColor: currentTheme.colors.primary + "10",
               }}
             >
-              {isOpenNow ? "Open Now" : "Closed"}
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <Star
-                className="h-4 w-4 mr-1 fill-current"
-                style={{ color: currentTheme.colors.accent || "#fbbf24" }}
-              />
-              <span
-                className="font-bold text-sm mr-1"
-                style={{ color: currentTheme.colors.text }}
-              >
-                {restaurant?.rating || "5.0"} Superb
-              </span>
-              <span
-                className="text-xs"
-                style={{ color: currentTheme.colors.textSecondary }}
-              >
-                (22 Reviews)
-              </span>
-            </div>
-            <div className="text-right">
-              <span
-                className="font-bold text-lg"
-                style={{ color: currentTheme.colors.primary }}
-              >
-                Rs. {restaurant?.cost_for_two || "Unknown"}
-              </span>
-              <span
-                className="text-sm ml-1"
-                style={{ color: currentTheme.colors.textSecondary }}
-              >
-                for 2 pax
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Special Offers */}
-        {activeOffers.length > 0 && (
-          <div id="special-offers">
-            <div
-              className="rounded-xl shadow-lg border overflow-hidden"
-              style={{
-                backgroundColor: currentTheme.colors.surface,
-                borderColor: currentTheme.colors.primary + "20",
-              }}
-            >
-              <div
-                className={`bg-gradient-to-r ${currentTheme.gradients.special} p-4`}
-              >
-                <div className="flex items-center justify-between">
+              <div className="flex items-start justify-between">
+                {/* Left Section - Name and Location */}
+                <div className="flex-1">
                   <h2
-                    className="text-lg font-bold flex items-center"
+                    className="text-3xl font-bold mb-2 leading-tight"
                     style={{
                       color: currentTheme.colors.text,
                       fontFamily: currentTheme.fonts.heading,
                     }}
                   >
-                    <Award
-                      className="h-5 w-5 mr-2"
-                      style={{ color: currentTheme.colors.accent }}
-                    />
-                    Special Offers
+                    {restaurant?.name}
                   </h2>
-                  {activeOffers.length > 1 && (
-                    <div className="flex items-center space-x-1">
+                  <div className="flex items-center text-base mb-2">
+                    <MapPin
+                      className="h-4 w-4 mr-2"
+                      style={{ color: currentTheme.colors.primary }}
+                    />
+                    <span style={{ color: currentTheme.colors.textSecondary }}>
+                      {location?.city && location?.state
+                        ? `${location.city}, ${location.state}`
+                        : "Location"}
+                    </span>
+                  </div>
+                  {location && (
+                    <p
+                      className="text-sm leading-relaxed"
+                      style={{ color: currentTheme.colors.textSecondary }}
+                    >
+                      {[
+                        location.street,
+                        location.city,
+                        location.state,
+                        location.zip_code,
+                        "India",
+                      ]
+                        .filter(Boolean)
+                        .join(", ")}
+                    </p>
+                  )}
+                </div>
+
+                {/* Right Section - Status and Quick Info */}
+                <div className="text-right space-y-3">
+                  {/* Status Badge */}
+                  <div
+                    className="px-4 py-2 rounded-full font-semibold text-sm shadow-sm inline-block"
+                    style={{
+                      backgroundColor: isOpenNow
+                        ? currentTheme.colors.success || "#22c55e"
+                        : currentTheme.colors.error || "#ef4444",
+                      color: "#fff",
+                    }}
+                  >
+                    <div className="flex items-center space-x-2">
+                      <div
+                        className={`w-2 h-2 rounded-full ${
+                          isOpenNow ? "bg-green-200" : "bg-red-200"
+                        } animate-pulse`}
+                      />
+                      <span>{isOpenNow ? "Open Now" : "Closed"}</span>
+                    </div>
+                  </div>
+
+                  {/* Today's Hours */}
+                  {todayHours && (
+                    <div className="text-sm">
                       <span
-                        className="text-sm"
                         style={{ color: currentTheme.colors.textSecondary }}
                       >
-                        Offer {currentOfferIndex + 1}
+                        Today:{" "}
+                      </span>
+                      <span
+                        style={{ color: currentTheme.colors.text }}
+                        className="font-medium"
+                      >
+                        {todayHours.is_open
+                          ? `${todayHours.open_time} - ${todayHours.close_time}`
+                          : "Closed"}
                       </span>
                     </div>
                   )}
                 </div>
               </div>
+            </div>
 
-              <div className="relative overflow-hidden">
+            {/* Main Content Section */}
+            <div className="p-6">
+              {/* Rating and Price Row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                {/* Rating Card */}
+                <div
+                  className="p-4 rounded-lg border"
+                  style={{
+                    backgroundColor: currentTheme.colors.background,
+                    borderColor: currentTheme.colors.accent + "20",
+                  }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <div
+                        className="p-2 rounded-full mr-3"
+                        style={{
+                          backgroundColor: currentTheme.colors.accent + "20",
+                        }}
+                      >
+                        <Star
+                          className="h-5 w-5 fill-current"
+                          style={{
+                            color: currentTheme.colors.accent || "#fbbf24",
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <div
+                          className="font-bold text-xl"
+                          style={{ color: currentTheme.colors.text }}
+                        >
+                          {restaurant?.rating || "5.0"}
+                        </div>
+                        <div
+                          className="text-sm"
+                          style={{ color: currentTheme.colors.textSecondary }}
+                        >
+                          Excellent
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div
+                        className="text-sm font-medium"
+                        style={{ color: currentTheme.colors.text }}
+                      >
+                        22 Reviews
+                      </div>
+                      <div
+                        className="text-xs"
+                        style={{ color: currentTheme.colors.textSecondary }}
+                      >
+                        See all reviews
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Price Card */}
+                <div
+                  className="p-4 rounded-lg border"
+                  style={{
+                    backgroundColor: currentTheme.colors.background,
+                    borderColor: currentTheme.colors.primary + "20",
+                  }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <div
+                        className="p-2 rounded-full mr-3"
+                        style={{
+                          backgroundColor: currentTheme.colors.primary + "20",
+                        }}
+                      >
+                        <IndianRupee
+                          className="h-5 w-5"
+                          style={{ color: currentTheme.colors.primary }}
+                        />
+                      </div>
+                      <div>
+                        <div
+                          className="font-bold text-xl"
+                          style={{ color: currentTheme.colors.primary }}
+                        >
+                          ₹{restaurant?.cost_for_two || "Unknown"}
+                        </div>
+                        <div
+                          className="text-sm"
+                          style={{ color: currentTheme.colors.textSecondary }}
+                        >
+                          For two people
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div
+                        className="text-sm font-medium"
+                        style={{ color: currentTheme.colors.success }}
+                      >
+                        Great Value
+                      </div>
+                      <div
+                        className="text-xs"
+                        style={{ color: currentTheme.colors.textSecondary }}
+                      >
+                        Average cost
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Cuisines Section */}
+              {restaurant?.cuisine_types &&
+                restaurant.cuisine_types.length > 0 && (
+                  <div className="mb-6">
+                    <div className="flex items-center mb-3">
+                      <Utensils
+                        className="h-5 w-5 mr-2"
+                        style={{ color: currentTheme.colors.accent }}
+                      />
+                      <h4
+                        className="text-lg font-semibold"
+                        style={{
+                          color: currentTheme.colors.text,
+                          fontFamily: currentTheme.fonts.heading,
+                        }}
+                      >
+                        Cuisines Available
+                      </h4>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {restaurant.cuisine_types.map((cuisine, index) => (
+                        <span
+                          key={index}
+                          className="px-4 py-2 rounded-full text-sm font-medium shadow-sm hover:scale-105 transition-all duration-200 cursor-pointer"
+                          style={{
+                            backgroundColor:
+                              index % 2 === 0
+                                ? currentTheme.colors.accent + "15"
+                                : currentTheme.colors.primary + "15",
+                            color:
+                              index % 2 === 0
+                                ? currentTheme.colors.accent
+                                : currentTheme.colors.primary,
+                            border: `1px solid ${
+                              index % 2 === 0
+                                ? currentTheme.colors.accent + "30"
+                                : currentTheme.colors.primary + "30"
+                            }`,
+                          }}
+                        >
+                          {cuisine}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+              {/* Features Section */}
+              {features &&
+                Object.entries(features).some(
+                  ([key, value]) =>
+                    key !== "id" && key !== "restaurant_id" && value === true
+                ) && (
+                  <div>
+                    <div className="flex items-center mb-3">
+                      <Badge
+                        className="h-5 w-5 mr-2"
+                        style={{ color: currentTheme.colors.success }}
+                      />
+                      <h4
+                        className="text-lg font-semibold"
+                        style={{
+                          color: currentTheme.colors.text,
+                          fontFamily: currentTheme.fonts.heading,
+                        }}
+                      >
+                        What We Offer
+                      </h4>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {/* Delivery Available */}
+                      {features?.home_delivery && (
+                        <div
+                          className="flex items-center p-3 rounded-lg border hover:shadow-md transition-shadow"
+                          style={{
+                            backgroundColor: currentTheme.colors.success + "10",
+                            borderColor: currentTheme.colors.success + "20",
+                          }}
+                        >
+                          <Home
+                            className="h-4 w-4 mr-2"
+                            style={{ color: currentTheme.colors.success }}
+                          />
+                          <span
+                            className="text-sm font-medium"
+                            style={{ color: currentTheme.colors.success }}
+                          >
+                            Delivery
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Cards Accepted */}
+                      {features?.accepts_cards && (
+                        <div
+                          className="flex items-center p-3 rounded-lg border hover:shadow-md transition-shadow"
+                          style={{
+                            backgroundColor: currentTheme.colors.primary + "10",
+                            borderColor: currentTheme.colors.primary + "20",
+                          }}
+                        >
+                          <CreditCard
+                            className="h-4 w-4 mr-2"
+                            style={{ color: currentTheme.colors.primary }}
+                          />
+                          <span
+                            className="text-sm font-medium"
+                            style={{ color: currentTheme.colors.primary }}
+                          >
+                            Cards
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Air Conditioned */}
+                      {features?.air_conditioned && (
+                        <div
+                          className="flex items-center p-3 rounded-lg border hover:shadow-md transition-shadow"
+                          style={{
+                            backgroundColor: currentTheme.colors.accent + "10",
+                            borderColor: currentTheme.colors.accent + "20",
+                          }}
+                        >
+                          <Wind
+                            className="h-4 w-4 mr-2"
+                            style={{ color: currentTheme.colors.accent }}
+                          />
+                          <span
+                            className="text-sm font-medium"
+                            style={{ color: currentTheme.colors.accent }}
+                          >
+                            AC
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Family Friendly */}
+                      {features?.family_friendly && (
+                        <div
+                          className="flex items-center p-3 rounded-lg border hover:shadow-md transition-shadow"
+                          style={{
+                            backgroundColor: currentTheme.colors.success + "10",
+                            borderColor: currentTheme.colors.success + "20",
+                          }}
+                        >
+                          <Users
+                            className="h-4 w-4 mr-2"
+                            style={{ color: currentTheme.colors.success }}
+                          />
+                          <span
+                            className="text-sm font-medium"
+                            style={{ color: currentTheme.colors.success }}
+                          >
+                            Family
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+            </div>
+          </div>
+        </div>
+
+        {/* ---------------  SPECIAL OFFERS --------------- */}
+
+        {/* Special Offers */}
+        {activeOffers.length > 0 && (
+          <section id="special-offers" className="relative">
+            {/* ✨ Enhanced sparkling background */}
+            <div
+              className="pointer-events-none absolute inset-0 overflow-hidden"
+              style={{
+                background: [
+                  "radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.1) 1px, transparent 1px)",
+                  "radial-gradient(circle at 80% 70%, rgba(255, 255, 255, 0.05) 1px, transparent 1px)",
+                  "radial-gradient(circle at 40% 80%, rgba(255, 255, 255, 0.08) 1px, transparent 1px)",
+                ].join(", "),
+                backgroundSize: "100px 100px, 150px 150px, 120px 120px",
+                animation:
+                  "sparkleMove 20s linear infinite, sparkleMove2 25s linear infinite reverse",
+              }}
+            />
+
+            <div
+              className="relative rounded-xl shadow-lg border overflow-hidden backdrop-blur-sm"
+              style={{
+                backgroundColor: currentTheme.colors.surface,
+                borderColor: currentTheme.colors.primary + "20",
+              }}
+            >
+              {/* ========== Enhanced Header ========== */}
+              <header
+                className={`bg-gradient-to-r ${currentTheme.gradients.special} py-6 relative overflow-hidden`}
+              >
+                {/* Enhanced bouncing gifts with glow effect */}
+                <Gift
+                  className="absolute left-4 top-1/2 -translate-y-1/2 h-10 w-10 text-yellow-300 animate-bounce hidden md:block"
+                  style={{
+                    filter: "drop-shadow(0 0 8px rgba(255, 215, 0, 0.6))",
+                    animationDelay: "0s",
+                  }}
+                />
+                <Gift
+                  className="absolute right-4 top-1/2 -translate-y-1/2 h-10 w-10 text-yellow-300 animate-bounce hidden md:block"
+                  style={{
+                    filter: "drop-shadow(0 0 8px rgba(255, 215, 0, 0.6))",
+                    animationDelay: "0.3s",
+                  }}
+                />
+
+                {/* Floating sparkle elements */}
+                <div className="absolute top-2 left-1/4 w-2 h-2 bg-yellow-200 rounded-full animate-pulse opacity-60"></div>
+                <div className="absolute bottom-3 right-1/4 w-1 h-1 bg-white rounded-full animate-ping opacity-40"></div>
+                <div
+                  className="absolute top-4 right-1/3 w-1.5 h-1.5 bg-yellow-300 rounded-full animate-bounce opacity-50"
+                  style={{ animationDelay: "0.5s" }}
+                ></div>
+
+                <div className="flex items-center justify-center gap-4 flex-wrap relative z-10">
+                  <h2
+                    className="flex items-center gap-3 font-extrabold text-2xl lg:text-3xl tracking-wide"
+                    style={{
+                      fontFamily: currentTheme.fonts.heading,
+                      color: currentTheme.colors.text,
+                      textShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                    }}
+                  >
+                    <Award
+                      className="h-9 w-9 drop-shadow-md"
+                      style={{
+                        color: currentTheme.colors.accent,
+                        filter: "drop-shadow(0 0 6px rgba(251, 191, 36, 0.4))",
+                      }}
+                    />
+                    Special Offers
+                  </h2>
+
+                  {/* Enhanced badge with animation */}
+                  <span
+                    className="inline-flex items-center px-5 py-2 rounded-full text-sm lg:text-base font-black text-white bg-gradient-to-r from-pink-500 to-pink-600 shadow-lg transform hover:scale-105 transition-all duration-200 animate-pulse"
+                    style={{
+                      boxShadow: "0 4px 15px rgba(236, 72, 153, 0.4)",
+                    }}
+                  >
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Exciting Coupons
+                  </span>
+                </div>
+
+                {/* Enhanced index indicator */}
+                {activeOffers.length > 1 && (
+                  <div className="mt-4 text-center">
+                    <span
+                      className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-black/20 backdrop-blur-sm"
+                      style={{ color: currentTheme.colors.textSecondary }}
+                    >
+                      <div className="w-2 h-2 rounded-full bg-current mr-2 animate-pulse"></div>
+                      Offer {currentOfferIndex + 1} of {activeOffers.length}
+                    </span>
+                  </div>
+                )}
+              </header>
+
+              {/* ========== Enhanced Offer body (carousel) ========== */}
+              <div className="relative overflow-hidden bg-gradient-to-b from-transparent to-black/5">
                 <div
                   className="flex transition-transform duration-700 ease-in-out"
                   style={{
                     transform: `translateX(-${currentOfferIndex * 100}%)`,
                   }}
                 >
-                  {activeOffers.map((offer) => (
-                    <div key={offer.id} className="w-full flex-shrink-0 p-4">
-                      <div className="flex gap-3">
-                        <div className="flex-1">
-                          {/* Badge Text */}
+                  {activeOffers.map((offer, index) => (
+                    <article
+                      key={offer.id}
+                      className="w-full flex-shrink-0 p-8 flex flex-col lg:flex-row items-start lg:items-start gap-4"
+                    >
+                      {/* ---------- Enhanced TEXT (left on desktop) ---------- */}
+                      <div className="flex-1 max-w-md space-y-4">
+                        {/* Enhanced badges section */}
+                        <div className="flex flex-wrap items-center gap-3">
                           {offer.badge_text && (
                             <span
-                              className="inline-block px-3 py-1 rounded-full text-xs font-bold mb-2"
+                              className="inline-flex items-center px-4 py-2 rounded-full text-sm font-bold bg-gradient-to-r from-amber-400 to-amber-500 text-amber-900 shadow-md transform hover:scale-105 transition-all duration-200"
                               style={{
-                                backgroundColor:
-                                  currentTheme.colors.accent + "20",
-                                color: currentTheme.colors.accent,
-                                border: `1px solid ${currentTheme.colors.accent}40`,
+                                boxShadow: "0 4px 12px rgba(245, 158, 11, 0.3)",
                               }}
                             >
+                              <Tag className="h-4 w-4 mr-2" />
                               {offer.badge_text}
                             </span>
                           )}
 
-                          {/* Offer Name */}
-                          <h3
-                            className="text-lg font-bold mb-1"
-                            style={{
-                              color: currentTheme.colors.text,
-                              fontFamily: currentTheme.fonts.heading,
-                            }}
-                          >
-                            {offer.name}
-                          </h3>
-
-                          {/* Description */}
-                          {offer.description && (
-                            <p
-                              className="text-sm leading-relaxed"
-                              style={{
-                                color: currentTheme.colors.textSecondary,
-                              }}
-                            >
-                              {offer.description}
-                            </p>
+                          {/* NEW badge */}
+                          {index === 0 && (
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-red-500 to-red-600 text-white shadow-md animate-pulse">
+                              <Flame className="h-3 w-3 mr-1" />
+                              NEW
+                            </span>
                           )}
 
-                          {/* Active Offer Indicator */}
-                          <div className="flex items-center mt-2">
-                            <div
-                              className="w-3 h-3 rounded-full mr-2"
-                              style={{
-                                backgroundColor: currentTheme.colors.success,
-                              }}
-                            ></div>
-                            <span
-                              className="text-xs font-medium"
-                              style={{ color: currentTheme.colors.success }}
-                            >
-                              Active Offer
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Offer Image */}
-                        {offer.image_url && (
-                          <div
-                            className="w-20 h-20 rounded-lg overflow-hidden border"
+                          {/* Limited Time badge */}
+                          <span
+                            className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border-2 border-dashed"
                             style={{
-                              borderColor: currentTheme.colors.primary + "20",
+                              borderColor: currentTheme.colors.accent,
+                              color: currentTheme.colors.accent,
+                              backgroundColor:
+                                currentTheme.colors.accent + "10",
                             }}
                           >
-                            <img
-                              src={
-                                Array.isArray(offer.image_url)
-                                  ? offer.image_url[0]
-                                  : typeof offer.image_url === "string" &&
-                                    offer.image_url.startsWith("[")
-                                  ? JSON.parse(offer.image_url)[0]
-                                  : offer.image_url
-                              }
-                              alt={offer.name}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                e.currentTarget.onerror = null; // prevent infinite loop
-                                e.currentTarget.src = mainLogo; // fallback image path
-                              }}
-                            />
-                          </div>
+                            ⏰ Limited Time
+                          </span>
+                        </div>
+
+                        <h3
+                          className="text-2xl lg:text-3xl font-bold leading-tight"
+                          style={{
+                            color: currentTheme.colors.text,
+                            fontFamily: currentTheme.fonts.heading,
+                          }}
+                        >
+                          {offer.name}
+                        </h3>
+
+                        {offer.description && (
+                          <p
+                            className="text-base leading-relaxed"
+                            style={{ color: currentTheme.colors.textSecondary }}
+                          >
+                            {offer.description}
+                          </p>
                         )}
+
+                        {/* Enhanced status indicators */}
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-3 h-3 rounded-full animate-pulse"
+                            style={{
+                              backgroundColor: currentTheme.colors.success,
+                            }}
+                          />
+                          <span
+                            className="text-sm font-semibold"
+                            style={{ color: currentTheme.colors.success }}
+                          >
+                            Active Offer
+                          </span>
+                        </div>
                       </div>
-                    </div>
+
+                      {/* ---------- Enhanced IMAGE (pushed far right) ---------- */}
+                      {offer.image_url && (
+                        <div className="flex-shrink-0 lg:ml-auto lg:mr-0">
+                          <div className="relative group">
+                            <div
+                              className="w-64 h-64 lg:w-80 lg:h-80 rounded-xl overflow-hidden border-2 shadow-2xl relative"
+                              style={{
+                                borderColor: currentTheme.colors.primary + "30",
+                              }}
+                            >
+                              {/* Enhanced image with overlay effects */}
+                              <img
+                                src={
+                                  Array.isArray(offer.image_url)
+                                    ? offer.image_url[0]
+                                    : typeof offer.image_url === "string" &&
+                                      offer.image_url.startsWith("[")
+                                    ? JSON.parse(offer.image_url)[0]
+                                    : offer.image_url
+                                }
+                                alt={offer.name}
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                onError={(e) => {
+                                  e.currentTarget.onerror = null;
+                                  e.currentTarget.src = mainLogo;
+                                }}
+                              />
+
+                              {/* Image overlay with gradient */}
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+                              {/* Floating discount badge on image */}
+                              <div className="absolute -top-3 -right-3">
+                                <div
+                                  className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-4 py-2 rounded-full font-bold text-sm shadow-lg animate-bounce"
+                                  style={{
+                                    transform: "rotate(12deg)",
+                                    animationDuration: "2s",
+                                  }}
+                                >
+                                  25% OFF
+                                </div>
+                              </div>
+
+                              {/* Corner decoration */}
+                              <div className="absolute top-2 left-2">
+                                <div
+                                  className="w-6 h-6 rounded-full animate-pulse"
+                                  style={{
+                                    backgroundColor:
+                                      currentTheme.colors.accent + "40",
+                                  }}
+                                ></div>
+                              </div>
+
+                              {/* Sparkle effects on image */}
+                              <div className="absolute top-4 right-6 w-1 h-1 bg-white rounded-full animate-ping"></div>
+                              <div
+                                className="absolute bottom-6 left-4 w-1.5 h-1.5 bg-yellow-300 rounded-full animate-bounce"
+                                style={{ animationDelay: "0.7s" }}
+                              ></div>
+                            </div>
+
+                            {/* Image reflection effect */}
+                            <div
+                              className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-3/4 h-6 rounded-full opacity-20 blur-md"
+                              style={{
+                                backgroundColor: currentTheme.colors.primary,
+                              }}
+                            ></div>
+                          </div>
+                        </div>
+                      )}
+                    </article>
                   ))}
                 </div>
 
+                {/* Enhanced dots navigation */}
                 {activeOffers.length > 1 && (
-                  <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-1">
-                    {activeOffers.map((_, dotIndex) => (
-                      <button
-                        aria-label="Offer Dot"
-                        key={dotIndex}
-                        onClick={() => setCurrentOfferIndex(dotIndex)}
-                        className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                          dotIndex === currentOfferIndex ? "scale-125" : ""
-                        }`}
-                        style={{
-                          backgroundColor:
-                            dotIndex === currentOfferIndex
-                              ? currentTheme.colors.primary
-                              : currentTheme.colors.textSecondary + "60",
-                        }}
-                      />
-                    ))}
+                  <div className="flex justify-center pb-6">
+                    <div className="flex gap-3 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg">
+                      {activeOffers.map((_, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setCurrentOfferIndex(i)}
+                          aria-label={`Offer ${i + 1}`}
+                          className={`w-4 h-4 rounded-full transition-all duration-300 transform hover:scale-110 ${
+                            i === currentOfferIndex
+                              ? "scale-125 shadow-md"
+                              : "opacity-60 hover:opacity-80"
+                          }`}
+                          style={{
+                            backgroundColor:
+                              i === currentOfferIndex
+                                ? currentTheme.colors.primary
+                                : currentTheme.colors.textSecondary,
+                            boxShadow:
+                              i === currentOfferIndex
+                                ? `0 4px 12px ${currentTheme.colors.primary}40`
+                                : "none",
+                          }}
+                        />
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
             </div>
-          </div>
+          </section>
         )}
+
         {showSpinWheel && (
           <div className="relative">
             <SpinWheel />
           </div>
         )}
+
         {/* Our Delicious Menu */}
         {categories.length > 0 && (
           <div id="menu">
@@ -1038,356 +1667,376 @@ export const PublicRestaurantView: React.FC = () => {
                 borderColor: currentTheme.colors.primary + "20",
               }}
             >
+              {/* Enhanced Header */}
               <div
-                className={`bg-gradient-to-r ${currentTheme.gradients.header} p-4`}
+                className={`bg-gradient-to-r ${currentTheme.gradients.header} p-6`}
               >
                 <div className="flex items-center justify-center">
-                  <h2
-                    className="text-xl font-bold flex items-center"
-                    style={{
-                      color: currentTheme.colors.text,
-                      fontFamily: currentTheme.fonts.heading,
-                    }}
-                  >
-                    <Utensils
-                      className="h-5 w-5 mr-2"
-                      style={{ color: currentTheme.colors.accent }}
-                    />
-                    Our Delicious Menu
-                  </h2>
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-3 mb-2">
+                      <Utensils
+                        className="h-6 w-6"
+                        style={{ color: currentTheme.colors.accent }}
+                      />
+                      <h2
+                        className="text-2xl font-bold"
+                        style={{
+                          color: currentTheme.colors.text,
+                          fontFamily: currentTheme.fonts.heading,
+                        }}
+                      >
+                        Our Delicious Menu
+                      </h2>
+                      <Utensils
+                        className="h-6 w-6"
+                        style={{ color: currentTheme.colors.accent }}
+                      />
+                    </div>
+                    <p
+                      className="text-sm opacity-80"
+                      style={{ color: currentTheme.colors.textSecondary }}
+                    >
+                      Crafted with love, served with passion
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              <div className="p-4">
-                {/* Category Filter */}
-                <div className="flex flex-wrap gap-2 mb-4">
-                  <button
-                    onClick={() => setSelectedCategory("all")}
-                    className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
-                      selectedCategory === "all"
-                        ? `bg-gradient-to-r ${currentTheme.gradients.button} text-white`
-                        : "border"
-                    }`}
-                    style={
-                      selectedCategory !== "all"
-                        ? {
-                            backgroundColor: currentTheme.colors.background,
-                            borderColor: currentTheme.colors.primary + "30",
-                            color: currentTheme.colors.text,
-                          }
-                        : {}
-                    }
+              <div className="p-6">
+                {/* Enhanced Category Filter */}
+                <div className="mb-6">
+                  <h3
+                    className="text-lg font-semibold mb-3"
+                    style={{ color: currentTheme.colors.text }}
                   >
-                    All Items
-                  </button>
-
-                  {categories.map((category) => (
+                    Browse Categories
+                  </h3>
+                  <div className="flex flex-wrap gap-3">
                     <button
-                      key={category.id}
-                      onClick={() => setSelectedCategory(category.id)}
-                      className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
-                        selectedCategory === category.id
-                          ? `bg-gradient-to-r ${currentTheme.gradients.button} text-white`
-                          : "border"
+                      onClick={() => setSelectedCategory("all")}
+                      className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 transform hover:scale-105 ${
+                        selectedCategory === "all"
+                          ? `bg-gradient-to-r ${currentTheme.gradients.button} text-white shadow-lg`
+                          : "border-2 hover:shadow-md"
                       }`}
                       style={
-                        selectedCategory !== category.id
+                        selectedCategory !== "all"
                           ? {
                               backgroundColor: currentTheme.colors.background,
-                              borderColor: currentTheme.colors.primary + "30",
+                              borderColor: currentTheme.colors.primary + "40",
                               color: currentTheme.colors.text,
                             }
                           : {}
                       }
                     >
-                      {category.name}
+                      <span className="flex items-center gap-2">
+                        🍽️ All Items
+                        <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs">
+                          {filteredItems.length}
+                        </span>
+                      </span>
                     </button>
-                  ))}
+
+                    {categories.map((category) => (
+                      <button
+                        key={category.id}
+                        onClick={() => setSelectedCategory(category.id)}
+                        className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 transform hover:scale-105 ${
+                          selectedCategory === category.id
+                            ? `bg-gradient-to-r ${currentTheme.gradients.button} text-white shadow-lg`
+                            : "border-2 hover:shadow-md"
+                        }`}
+                        style={
+                          selectedCategory !== category.id
+                            ? {
+                                backgroundColor: currentTheme.colors.background,
+                                borderColor: currentTheme.colors.primary + "40",
+                                color: currentTheme.colors.text,
+                              }
+                            : {}
+                        }
+                      >
+                        <span className="flex items-center gap-2">
+                          {category.name}
+                          <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs">
+                            {
+                              items.filter(
+                                (item) =>
+                                  item.category_id === category.id &&
+                                  item.is_available
+                              ).length
+                            }
+                          </span>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
-                {/* Menu Items - 2 Rows Horizontal Scroll */}
-                <div className="space-y-4">
-                  {/* Create two arrays for two rows */}
-                  {(() => {
-                    const itemsPerRow = Math.ceil(filteredItems.length / 2);
-                    const firstRow = filteredItems.slice(0, itemsPerRow);
-                    const secondRow = filteredItems.slice(itemsPerRow);
+                {/* IMPROVED: Single Horizontal Scrolling Row */}
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3
+                      className="text-lg font-semibold"
+                      style={{ color: currentTheme.colors.text }}
+                    >
+                      {selectedCategory === "all"
+                        ? "All Menu Items"
+                        : categories.find((c) => c.id === selectedCategory)
+                            ?.name || "Menu Items"}
+                    </h3>
+                    <span
+                      className="text-sm px-3 py-1 rounded-full bg-black/5"
+                      style={{ color: currentTheme.colors.textSecondary }}
+                    >
+                      {filteredItems.length} items
+                    </span>
+                  </div>
 
-                    return (
-                      <>
-                        {/* First Row */}
-                        <div className="overflow-x-auto scrollbar-hide">
-                          <div
-                            className="flex space-x-3 pb-2"
-                            style={{ minWidth: "max-content" }}
-                          >
-                            {firstRow.map((item) => (
+                  {/* Single Horizontal Scroll Container */}
+                  <div className="overflow-x-auto scrollbar-hide">
+                    <div
+                      className="flex gap-4 pb-4"
+                      style={{ minWidth: "max-content" }}
+                    >
+                      {filteredItems.map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex-shrink-0 w-56 rounded-xl overflow-hidden border-2 shadow-md hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+                          style={{
+                            backgroundColor: currentTheme.colors.surface,
+                            borderColor: currentTheme.colors.primary + "20",
+                          }}
+                        >
+                          {/* Enhanced Item Image */}
+                          <div className="relative aspect-square group">
+                            {item.image_url ? (
+                              <>
+                                <img
+                                  src={item.image_url}
+                                  alt={item.name}
+                                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 cursor-pointer"
+                                  onClick={() => {
+                                    const menuImages = filteredItems
+                                      .filter((i) => i.image_url)
+                                      .map((i) => ({
+                                        url: i.image_url,
+                                        alt: i.name,
+                                        name: i.name,
+                                      }));
+                                    const currentIndex = menuImages.findIndex(
+                                      (img) => img.url === item.image_url
+                                    );
+                                    openImageViewer(
+                                      item.image_url,
+                                      item.name,
+                                      menuImages,
+                                      currentIndex
+                                    );
+                                  }}
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                              </>
+                            ) : (
                               <div
-                                key={item.id}
-                                className="flex-shrink-0 w-40 rounded-lg overflow-hidden border"
+                                className="w-full h-full flex items-center justify-center"
                                 style={{
-                                  backgroundColor: currentTheme.colors.surface,
-                                  borderColor:
-                                    currentTheme.colors.primary + "20",
+                                  backgroundColor:
+                                    currentTheme.colors.background,
                                 }}
                               >
-                                {/* Item Image */}
-                                <div className="relative aspect-square">
-                                  {item.image_url ? (
-                                    <>
-                                      <img
-                                        src={item.image_url}
-                                        alt={item.name}
-                                        className="w-full h-full object-cover"
-                                      />
-                                      {item.is_special && (
-                                        <div className="absolute top-2 right-2">
-                                          <span
-                                            className="px-2 py-1 rounded-full text-xs font-bold flex items-center"
-                                            style={{
-                                              backgroundColor:
-                                                currentTheme.colors.error ||
-                                                "#ef4444",
-                                              color: "white",
-                                            }}
-                                          >
-                                            <Flame className="h-3 w-3 mr-1" />
-                                            SPECIAL
-                                          </span>
-                                        </div>
-                                      )}
-                                    </>
-                                  ) : (
-                                    <div
-                                      className="w-full h-full flex items-center justify-center"
-                                      style={{
-                                        backgroundColor:
-                                          currentTheme.colors.background,
-                                      }}
-                                    >
-                                      <Utensils
-                                        className="h-8 w-8"
-                                        style={{
-                                          color:
-                                            currentTheme.colors.textSecondary,
-                                        }}
-                                      />
-                                    </div>
-                                  )}
-                                </div>
-
-                                {/* Item Content */}
-                                <div className="p-3">
-                                  <div className="mb-2">
-                                    <h4
-                                      className="font-bold text-sm leading-tight mb-1"
-                                      style={{
-                                        color: currentTheme.colors.text,
-                                        fontFamily: currentTheme.fonts.heading,
-                                      }}
-                                    >
-                                      {item.name}
-                                    </h4>
-
-                                    {/* Description */}
-                                    {item.description && (
-                                      <p
-                                        className="text-xs leading-tight mb-2"
-                                        style={{
-                                          color:
-                                            currentTheme.colors.textSecondary,
-                                          overflow: "hidden",
-                                          display: "-webkit-box",
-                                          WebkitLineClamp: 2,
-                                          WebkitBoxOrient: "vertical",
-                                        }}
-                                      >
-                                        {item.description}
-                                      </p>
-                                    )}
-                                  </div>
-
-                                  {/* Price */}
-                                  <div className="text-center">
-                                    <span
-                                      className="text-lg font-bold"
-                                      style={{
-                                        color:
-                                          currentTheme.colors.success ||
-                                          "#22c55e",
-                                      }}
-                                    >
-                                      ₹{item.price}
-                                    </span>
-                                  </div>
+                                <div className="text-center">
+                                  <Utensils
+                                    className="h-12 w-12 mx-auto mb-2"
+                                    style={{
+                                      color: currentTheme.colors.textSecondary,
+                                    }}
+                                  />
+                                  <p
+                                    className="text-xs"
+                                    style={{
+                                      color: currentTheme.colors.textSecondary,
+                                    }}
+                                  >
+                                    No Image
+                                  </p>
                                 </div>
                               </div>
-                            ))}
-                          </div>
-                        </div>
+                            )}
 
-                        {/* Second Row */}
-                        {secondRow.length > 0 && (
-                          <div className="overflow-x-auto scrollbar-hide">
-                            <div
-                              className="flex space-x-3 pb-2"
-                              style={{ minWidth: "max-content" }}
-                            >
-                              {secondRow.map((item) => (
+                            {/* Enhanced Special Badge */}
+                            {item.is_special && (
+                              <div className="absolute top-3 right-3">
+                                <div className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center shadow-lg animate-pulse">
+                                  <Flame className="h-3 w-3 mr-1" />
+                                  CHEF'S SPECIAL
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Vegetarian Indicator */}
+                            <div className="absolute top-3 left-3">
+                              <div
+                                className="w-5 h-5 border-2 rounded-sm flex items-center justify-center shadow-sm"
+                                style={{
+                                  borderColor:
+                                    currentTheme.colors.success || "#22c55e",
+                                  backgroundColor: "white",
+                                }}
+                              >
                                 <div
-                                  key={item.id}
-                                  className="flex-shrink-0 w-40 rounded-lg overflow-hidden border"
+                                  className="w-2 h-2 rounded-full"
                                   style={{
                                     backgroundColor:
-                                      currentTheme.colors.surface,
-                                    borderColor:
-                                      currentTheme.colors.primary + "20",
+                                      currentTheme.colors.success || "#22c55e",
                                   }}
-                                >
-                                  {/* Item Image */}
-                                  <div className="relative aspect-square">
-                                    {item.image_url ? (
-                                      <>
-                                        <img
-                                          src={item.image_url}
-                                          alt={item.name}
-                                          className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity duration-200"
-                                          onClick={() => {
-                                            const menuImages = filteredItems
-                                              .filter((i) => i.image_url)
-                                              .map((i) => ({
-                                                url: i.image_url,
-                                                alt: i.name,
-                                                name: i.name,
-                                              }));
-                                            const currentIndex =
-                                              menuImages.findIndex(
-                                                (img) =>
-                                                  img.url === item.image_url
-                                              );
-                                            openImageViewer(
-                                              item.image_url,
-                                              item.name,
-                                              menuImages,
-                                              currentIndex
-                                            );
-                                          }}
-                                        />
-                                        {item.is_special && (
-                                          <div className="absolute top-2 right-2">
-                                            <span
-                                              className="px-2 py-1 rounded-full text-xs font-bold flex items-center"
-                                              style={{
-                                                backgroundColor:
-                                                  currentTheme.colors.error ||
-                                                  "#ef4444",
-                                                color: "white",
-                                              }}
-                                            >
-                                              <Flame className="h-3 w-3 mr-1" />
-                                              SPECIAL
-                                            </span>
-                                          </div>
-                                        )}
-                                      </>
-                                    ) : (
-                                      <div
-                                        className="w-full h-full flex items-center justify-center"
-                                        style={{
-                                          backgroundColor:
-                                            currentTheme.colors.background,
-                                        }}
-                                      >
-                                        <Utensils
-                                          className="h-8 w-8"
-                                          style={{
-                                            color:
-                                              currentTheme.colors.textSecondary,
-                                          }}
-                                        />
-                                      </div>
-                                    )}
-                                  </div>
-
-                                  {/* Item Content */}
-                                  <div className="p-3">
-                                    <div className="mb-2">
-                                      <h4
-                                        className="font-bold text-sm leading-tight mb-1"
-                                        style={{
-                                          color: currentTheme.colors.text,
-                                          fontFamily:
-                                            currentTheme.fonts.heading,
-                                        }}
-                                      >
-                                        {item.name}
-                                      </h4>
-
-                                      {/* Description */}
-                                      {item.description && (
-                                        <p
-                                          className="text-xs leading-tight mb-2"
-                                          style={{
-                                            color:
-                                              currentTheme.colors.textSecondary,
-                                            overflow: "hidden",
-                                            display: "-webkit-box",
-                                            WebkitLineClamp: 2,
-                                            WebkitBoxOrient: "vertical",
-                                          }}
-                                        >
-                                          {item.description}
-                                        </p>
-                                      )}
-                                    </div>
-
-                                    {/* Price */}
-                                    <div className="text-center">
-                                      <span
-                                        className="text-lg font-bold"
-                                        style={{
-                                          color:
-                                            currentTheme.colors.success ||
-                                            "#22c55e",
-                                        }}
-                                      >
-                                        ₹{item.price}
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
+                                ></div>
+                              </div>
                             </div>
                           </div>
-                        )}
-                      </>
-                    );
-                  })()}
+
+                          {/* Enhanced Item Content */}
+                          <div className="p-4">
+                            <div className="mb-3">
+                              <h4
+                                className="font-bold text-base leading-tight mb-2"
+                                style={{
+                                  color: currentTheme.colors.text,
+                                  fontFamily: currentTheme.fonts.heading,
+                                }}
+                              >
+                                {item.name}
+                              </h4>
+
+                              {/* Enhanced Description */}
+                              {item.description && (
+                                <p
+                                  className="text-xs leading-relaxed mb-3"
+                                  style={{
+                                    color: currentTheme.colors.textSecondary,
+                                    overflow: "hidden",
+                                    display: "-webkit-box",
+                                    WebkitLineClamp: 2,
+                                    WebkitBoxOrient: "vertical",
+                                  }}
+                                >
+                                  {item.description}
+                                </p>
+                              )}
+                            </div>
+
+                            {/* Enhanced Price Section */}
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-1">
+                                <IndianRupee
+                                  className="h-5 w-5"
+                                  style={{
+                                    color:
+                                      currentTheme.colors.success || "#22c55e",
+                                  }}
+                                />
+                                <span
+                                  className="text-xl font-bold"
+                                  style={{
+                                    color:
+                                      currentTheme.colors.success || "#22c55e",
+                                  }}
+                                >
+                                  {item.price}
+                                </span>
+                              </div>
+
+                              {/* Add to Cart Button */}
+                              <button
+                                className="px-4 py-2 rounded-lg text-xs font-semibold transition-all duration-200 hover:shadow-md transform hover:scale-105"
+                                style={{
+                                  backgroundColor: currentTheme.colors.primary,
+                                  color: "white",
+                                }}
+                              >
+                                Add +
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Scroll Indicator */}
+                  {filteredItems.length > 3 && (
+                    <div className="flex justify-center mt-4">
+                      <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-black/5">
+                        <span
+                          className="text-xs"
+                          style={{ color: currentTheme.colors.textSecondary }}
+                        >
+                          Scroll horizontally to see more →
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
+                {/* No Items Found */}
                 {filteredItems.length === 0 && (
-                  <div className="text-center py-8">
-                    <Search
-                      className="h-12 w-12 mx-auto mb-2"
-                      style={{ color: currentTheme.colors.textSecondary }}
-                    />
-                    <p style={{ color: currentTheme.colors.textSecondary }}>
+                  <div className="text-center py-12">
+                    <div className="mb-4">
+                      <Search
+                        className="h-16 w-16 mx-auto mb-4 opacity-50"
+                        style={{ color: currentTheme.colors.textSecondary }}
+                      />
+                    </div>
+                    <h3
+                      className="text-xl font-semibold mb-2"
+                      style={{ color: currentTheme.colors.text }}
+                    >
                       No items found
+                    </h3>
+                    <p
+                      className="text-sm mb-4"
+                      style={{ color: currentTheme.colors.textSecondary }}
+                    >
+                      Try selecting a different category
                     </p>
+                    <button
+                      onClick={() => setSelectedCategory("all")}
+                      className="px-6 py-2 rounded-lg text-sm font-semibold transition-colors duration-200"
+                      style={{
+                        backgroundColor: currentTheme.colors.primary,
+                        color: "white",
+                      }}
+                    >
+                      View All Items
+                    </button>
                   </div>
                 )}
 
-                {/* Menu Images Gallery */}
+                {/* IMPROVED: Enhanced Menu Gallery */}
+                {/* IMPROVED: Enhanced Menu Gallery */}
                 {(() => {
-                  // Get menu-specific images from gallery
                   const menuGalleryImages = images.filter((img) =>
                     img.alt_text.toLowerCase().includes("menu")
                   );
-
-                  // Get individual menu item images
                   const menuItemImages = filteredItems.filter(
                     (item) => item.image_url
                   );
+
+                  // Combine all menu images for consistent indexing
+                  const allMenuImages = [
+                    ...menuGalleryImages.map((img) => ({
+                      url: img.image_url,
+                      alt: img.alt_text,
+                      name: img.alt_text,
+                      type: "gallery",
+                    })),
+                    ...menuItemImages.map((item) => ({
+                      url: item.image_url,
+                      alt: item.name,
+                      name: item.name,
+                      type: "item",
+                    })),
+                  ];
 
                   return (
                     (menuGalleryImages.length > 0 ||
@@ -1399,157 +2048,188 @@ export const PublicRestaurantView: React.FC = () => {
                         }}
                       >
                         {!menuGalleryExpanded ? (
-                          /* Collapsed View - One main image with count overlay */
+                          /* Enhanced Collapsed View */
                           <div className="relative">
-                            <div className="grid grid-cols-3 gap-2 h-32">
-                              {/* Main Image */}
-                              <div
-                                className="col-span-2 rounded-lg overflow-hidden border"
-                                style={{
-                                  borderColor:
-                                    currentTheme.colors.primary + "20",
-                                }}
-                              >
-                                {(() => {
-                                  const allMenuImages = [
-                                    ...menuGalleryImages.map((img) => ({
-                                      url: img.image_url,
-                                      alt: img.alt_text,
-                                      name: img.alt_text,
-                                      type: "gallery",
-                                    })),
-                                    ...menuItemImages.map((item) => ({
-                                      url: item.image_url,
-                                      alt: item.name,
-                                      name: item.name,
-                                      type: "item",
-                                    })),
-                                  ];
-
-                                  return (
-                                    allMenuImages[0] && (
-                                      <img
-                                        src={allMenuImages[0].url}
-                                        alt={allMenuImages[0].alt}
-                                        className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity duration-200"
-                                        onClick={() => {
-                                          openImageViewer(
-                                            allMenuImages[0].url,
-                                            allMenuImages[0].name,
-                                            allMenuImages,
-                                            0
-                                          );
-                                        }}
-                                      />
-                                    )
-                                  );
-                                })()}
-                              </div>
-
-                              {/* Second Image with Overlay */}
-                              <div
-                                className="relative rounded-lg overflow-hidden border"
-                                style={{
-                                  borderColor:
-                                    currentTheme.colors.primary + "20",
-                                }}
-                              >
-                                {(() => {
-                                  const allMenuImages = [
-                                    ...menuGalleryImages.map((img) => ({
-                                      url: img.image_url,
-                                      alt: img.alt_text,
-                                      name: img.alt_text,
-                                      type: "gallery",
-                                    })),
-                                    ...menuItemImages.map((item) => ({
-                                      url: item.image_url,
-                                      alt: item.name,
-                                      name: item.name,
-                                      type: "item",
-                                    })),
-                                  ];
-
-                                  return (
-                                    allMenuImages[1] && (
-                                      <>
-                                        <img
-                                          src={allMenuImages[1].url}
-                                          alt={allMenuImages[1].alt}
-                                          className="w-full h-full object-cover cursor-pointer"
-                                          onClick={() => {
-                                            openImageViewer(
-                                              allMenuImages[1].url,
-                                              allMenuImages[1].name,
-                                              allMenuImages,
-                                              1
-                                            );
-                                          }}
-                                        />
-                                        <div className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center">
-                                          <button
-                                            onClick={() =>
-                                              setMenuGalleryExpanded(true)
-                                            }
-                                            className="text-white font-bold text-sm"
-                                          >
-                                            +{allMenuImages.length - 1} More...
-                                          </button>
-                                        </div>
-                                      </>
-                                    )
-                                  );
-                                })()}
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          /* Expanded View - Horizontal Scrollable */
-                          <div>
                             <div className="flex items-center justify-between mb-4">
                               <h4
-                                className="text-lg font-semibold"
+                                className="text-lg font-semibold flex items-center gap-2"
+                                style={{ color: currentTheme.colors.text }}
+                              >
+                                <Star
+                                  className="h-5 w-5"
+                                  style={{ color: currentTheme.colors.accent }}
+                                />
+                                Menu Gallery
+                              </h4>
+                              <span
+                                className="text-sm px-3 py-1 rounded-full bg-black/5"
+                                style={{
+                                  color: currentTheme.colors.textSecondary,
+                                }}
+                              >
+                                {allMenuImages.length} photos
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-4 gap-3 h-40">
+                              {/* Main Large Image */}
+                              <div className="col-span-2 row-span-2 rounded-xl overflow-hidden border-2 shadow-md hover:shadow-lg transition-shadow duration-300">
+                                {allMenuImages[0] && (
+                                  <img
+                                    src={allMenuImages[0].url}
+                                    alt={allMenuImages[0].alt}
+                                    className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-500"
+                                    onClick={() => {
+                                      openImageViewer(
+                                        allMenuImages[0].url,
+                                        allMenuImages[0].name,
+                                        allMenuImages,
+                                        0
+                                      );
+                                    }}
+                                  />
+                                )}
+                              </div>
+
+                              {/* Secondary Images */}
+                              {[1, 2, 3].map((index) => {
+                                const imageExists = allMenuImages[index];
+                                const isLastImage = index === 3;
+                                const hasMoreImages = allMenuImages.length > 4;
+
+                                return imageExists ? (
+                                  <div
+                                    key={index}
+                                    className={`rounded-lg overflow-hidden border shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer ${
+                                      isLastImage && hasMoreImages
+                                        ? "relative"
+                                        : ""
+                                    }`}
+                                  >
+                                    <img
+                                      src={allMenuImages[index].url}
+                                      alt={allMenuImages[index].alt}
+                                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                                      onClick={() => {
+                                        if (isLastImage && hasMoreImages) {
+                                          setMenuGalleryExpanded(true);
+                                        } else {
+                                          openImageViewer(
+                                            allMenuImages[index].url,
+                                            allMenuImages[index].name,
+                                            allMenuImages,
+                                            index
+                                          );
+                                        }
+                                      }}
+                                    />
+                                    {isLastImage && hasMoreImages && (
+                                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                        <div className="text-center text-white">
+                                          <span className="font-bold text-lg">
+                                            +{allMenuImages.length - 3}
+                                          </span>
+                                          <p className="text-xs">More Photos</p>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div
+                                    key={index}
+                                    className="rounded-lg border border-dashed border-gray-300 flex items-center justify-center"
+                                    style={{
+                                      borderColor:
+                                        currentTheme.colors.primary + "20",
+                                    }}
+                                  >
+                                    <span className="text-xs text-gray-400">
+                                      No Image
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+
+                            {/* Alternative Expand Button (if overlay doesn't work) */}
+                            {allMenuImages.length > 4 && (
+                              <div className="mt-4 text-center">
+                                <button
+                                  onClick={() => {
+                                    setMenuGalleryExpanded(true);
+                                  }}
+                                  className="px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
+                                  style={{
+                                    backgroundColor:
+                                      currentTheme.colors.primary + "10",
+                                    color: currentTheme.colors.primary,
+                                  }}
+                                >
+                                  View All {allMenuImages.length} Photos
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          /* Enhanced Expanded View */
+                          <div>
+                            <div className="flex items-center justify-between mb-6">
+                              <h4
+                                className="text-xl font-bold flex items-center gap-2"
                                 style={{
                                   color: currentTheme.colors.text,
                                   fontFamily: currentTheme.fonts.heading,
                                 }}
                               >
-                                Menu Images
+                                <Star
+                                  className="h-6 w-6"
+                                  style={{ color: currentTheme.colors.accent }}
+                                />
+                                Menu Gallery ({allMenuImages.length} Photos)
                               </h4>
                               <button
-                                onClick={() => setMenuGalleryExpanded(false)}
-                                className="text-sm font-medium px-3 py-1 rounded-lg"
+                                onClick={() => {
+                                  setMenuGalleryExpanded(false);
+                                }}
+                                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 hover:shadow-md"
                                 style={{
                                   color: currentTheme.colors.primary,
                                   backgroundColor:
                                     currentTheme.colors.primary + "10",
                                 }}
                               >
-                                Collapse
+                                Collapse View
                               </button>
                             </div>
 
-                            <div className="space-y-4">
+                            <div className="space-y-6">
                               {/* Menu Showcase Images */}
                               {menuGalleryImages.length > 0 && (
                                 <div>
                                   <h5
-                                    className="text-sm font-medium mb-3"
-                                    style={{
-                                      color: currentTheme.colors.textSecondary,
-                                    }}
+                                    className="text-base font-semibold mb-4 flex items-center gap-2"
+                                    style={{ color: currentTheme.colors.text }}
                                   >
-                                    Menu Showcase ({menuGalleryImages.length})
+                                    Menu Showcase
+                                    <span
+                                      className="px-2 py-1 rounded-full text-xs bg-black/5"
+                                      style={{
+                                        color:
+                                          currentTheme.colors.textSecondary,
+                                      }}
+                                    >
+                                      {menuGalleryImages.length} photos
+                                    </span>
                                   </h5>
                                   <div className="overflow-x-auto scrollbar-hide">
                                     <div
-                                      className="flex space-x-3 pb-2"
+                                      className="flex gap-4 pb-2"
                                       style={{ minWidth: "max-content" }}
                                     >
                                       {menuGalleryImages.map((image, index) => (
                                         <div
                                           key={`menu-gallery-${image.id}`}
-                                          className="flex-shrink-0 w-32 h-32 rounded-lg overflow-hidden border hover:scale-105 transition-transform duration-300"
+                                          className="flex-shrink-0 w-48 h-36 rounded-xl overflow-hidden border-2 shadow-md hover:shadow-xl transform hover:scale-105 transition-all duration-300"
                                           style={{
                                             borderColor:
                                               currentTheme.colors.primary +
@@ -1561,29 +2241,12 @@ export const PublicRestaurantView: React.FC = () => {
                                             alt={image.alt_text}
                                             className="w-full h-full object-cover cursor-pointer"
                                             onClick={() => {
-                                              const allMenuImages = [
-                                                ...menuGalleryImages.map(
-                                                  (img) => ({
-                                                    url: img.image_url,
-                                                    alt: img.alt_text,
-                                                    name: img.alt_text,
-                                                    type: "gallery",
-                                                  })
-                                                ),
-                                                ...menuItemImages.map(
-                                                  (item) => ({
-                                                    url: item.image_url,
-                                                    alt: item.name,
-                                                    name: item.name,
-                                                    type: "item",
-                                                  })
-                                                ),
-                                              ];
+                                              // FIXED: Use the combined array for consistent indexing
                                               openImageViewer(
                                                 image.image_url,
                                                 image.alt_text,
                                                 allMenuImages,
-                                                index
+                                                index // Use the correct index from gallery images
                                               );
                                             }}
                                           />
@@ -1598,65 +2261,48 @@ export const PublicRestaurantView: React.FC = () => {
                               {menuItemImages.length > 0 && (
                                 <div>
                                   <h5
-                                    className="text-sm font-medium mb-3"
-                                    style={{
-                                      color: currentTheme.colors.textSecondary,
-                                    }}
+                                    className="text-base font-semibold mb-4 flex items-center gap-2"
+                                    style={{ color: currentTheme.colors.text }}
                                   >
-                                    Dish Images ({menuItemImages.length})
-                                  </h5>
-                                  <div className="overflow-x-auto scrollbar-hide">
-                                    <div
-                                      className="flex space-x-3 pb-2"
-                                      style={{ minWidth: "max-content" }}
+                                    Dish Close-ups
+                                    <span
+                                      className="px-2 py-1 rounded-full text-xs bg-black/5"
+                                      style={{
+                                        color:
+                                          currentTheme.colors.textSecondary,
+                                      }}
                                     >
-                                      {menuItemImages.map((item, index) => (
-                                        <div
-                                          key={`menu-item-${item.id}`}
-                                          className="flex-shrink-0 w-32 h-32 rounded-lg overflow-hidden border hover:scale-105 transition-transform duration-300"
-                                          style={{
-                                            borderColor:
-                                              currentTheme.colors.primary +
-                                              "20",
+                                      {menuItemImages.length} photos
+                                    </span>
+                                  </h5>
+                                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                    {menuItemImages.map((item, index) => (
+                                      <div
+                                        key={`menu-item-${item.id}`}
+                                        className="aspect-square rounded-xl overflow-hidden border-2 shadow-md hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+                                        style={{
+                                          borderColor:
+                                            currentTheme.colors.primary + "20",
+                                        }}
+                                      >
+                                        <img
+                                          src={item.image_url}
+                                          alt={item.name}
+                                          className="w-full h-full object-cover cursor-pointer"
+                                          onClick={() => {
+                                            // FIXED: Calculate correct global index
+                                            const globalIndex =
+                                              menuGalleryImages.length + index;
+                                            openImageViewer(
+                                              item.image_url,
+                                              item.name,
+                                              allMenuImages,
+                                              globalIndex
+                                            );
                                           }}
-                                        >
-                                          <img
-                                            src={item.image_url}
-                                            alt={item.name}
-                                            className="w-full h-full object-cover cursor-pointer"
-                                            onClick={() => {
-                                              const allMenuImages = [
-                                                ...menuGalleryImages.map(
-                                                  (img) => ({
-                                                    url: img.image_url,
-                                                    alt: img.alt_text,
-                                                    name: img.alt_text,
-                                                    type: "gallery",
-                                                  })
-                                                ),
-                                                ...menuItemImages.map(
-                                                  (item) => ({
-                                                    url: item.image_url,
-                                                    alt: item.name,
-                                                    name: item.name,
-                                                    type: "item",
-                                                  })
-                                                ),
-                                              ];
-                                              const globalIndex =
-                                                menuGalleryImages.length +
-                                                index;
-                                              openImageViewer(
-                                                item.image_url,
-                                                item.name,
-                                                allMenuImages,
-                                                globalIndex
-                                              );
-                                            }}
-                                          />
-                                        </div>
-                                      ))}
-                                    </div>
+                                        />
+                                      </div>
+                                    ))}
                                   </div>
                                 </div>
                               )}
@@ -1674,158 +2320,266 @@ export const PublicRestaurantView: React.FC = () => {
 
         {/* Chef's Special Recommendations */}
         {specialItems.length > 0 && (
-          <div id="chef-special">
+          <div id="chef-special" className="relative">
+            {/* Background Decorative Elements */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+              <div className="absolute -top-4 -right-4 w-24 h-24 bg-gradient-to-br from-yellow-200/20 to-orange-200/20 rounded-full blur-xl"></div>
+              <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-gradient-to-tr from-red-200/20 to-pink-200/20 rounded-full blur-xl"></div>
+            </div>
+
             <div
-              className="rounded-xl shadow-lg border overflow-hidden"
+              className="relative rounded-2xl shadow-2xl border overflow-hidden backdrop-blur-sm"
               style={{
                 backgroundColor: currentTheme.colors.surface,
-                borderColor: currentTheme.colors.primary + "20",
+                borderColor: currentTheme.colors.primary + "30",
               }}
             >
-              {/* Header Section */}
+              {/* Enhanced Header Section */}
               <div
-                className="text-center py-6 px-4"
-                style={{ backgroundColor: currentTheme.colors.background }}
+                className={`relative bg-gradient-to-r ${
+                  currentTheme.gradients.special ||
+                  "from-orange-400 via-red-400 to-pink-400"
+                } overflow-hidden`}
               >
-                <div className="flex items-center justify-center mb-2">
-                  <Star
-                    className="h-6 w-6 fill-current"
-                    style={{ color: currentTheme.colors.accent || "#fbbf24" }}
-                  />
+                <div className="absolute inset-0 opacity-20">
+                  <div className="absolute top-4 left-4 w-8 h-8 border-2 border-white/30 rounded-full animate-pulse"></div>
+                  <div className="absolute top-8 right-8 w-6 h-6 border-2 border-white/30 rounded-full animate-pulse delay-100"></div>
+                  <div className="absolute bottom-6 left-12 w-4 h-4 border-2 border-white/30 rounded-full animate-pulse delay-200"></div>
+                  <div className="absolute bottom-4 right-6 w-10 h-10 border-2 border-white/30 rounded-full animate-pulse delay-300"></div>
                 </div>
-                <h3
-                  className="text-xl font-bold mb-2"
-                  style={{
-                    color: currentTheme.colors.text,
-                    fontFamily: currentTheme.fonts.heading,
-                  }}
-                >
-                  Chef's Special Recommendations
-                </h3>
-                <p
-                  className="text-sm"
-                  style={{ color: currentTheme.colors.textSecondary }}
-                >
-                  Limited time offerings crafted with love
-                </p>
+
+                <div className="relative text-center py-8 px-6">
+                  {/* Main Icon with Glow Effect */}
+                  <div className="flex items-center justify-center mb-4">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-white/20 rounded-full blur-lg scale-150"></div>
+                      <div
+                        className="relative w-16 h-16 rounded-full flex items-center justify-center shadow-2xl"
+                        style={{
+                          backgroundColor: currentTheme.colors.accent + "40",
+                        }}
+                      >
+                        <Star className="h-8 w-8 fill-current text-white animate-pulse" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Enhanced Title */}
+                  <h3
+                    className="text-3xl md:text-4xl font-extrabold mb-3 text-white tracking-wide"
+                    style={{
+                      fontFamily: currentTheme.fonts.heading,
+                      textShadow: "0 2px 4px rgba(0,0,0,0.3)",
+                    }}
+                  >
+                    Chef's Special
+                  </h3>
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <div className="h-px bg-white/30 flex-1 max-w-12"></div>
+                    <span className="text-white/90 text-lg font-medium">
+                      ✨ Recommendations ✨
+                    </span>
+                    <div className="h-px bg-white/30 flex-1 max-w-12"></div>
+                  </div>
+                  <p className="text-white/80 text-sm max-w-md mx-auto leading-relaxed">
+                    Handcrafted masterpieces by our executive chef • Limited
+                    time offerings
+                  </p>
+
+                  {/* Items Count Badge */}
+                  <div className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full border border-white/30">
+                    <span className="text-white font-bold text-sm">
+                      {specialItems.length}
+                    </span>
+                    <span className="text-white/90 text-xs">
+                      Exclusive Dishes
+                    </span>
+                  </div>
+                </div>
               </div>
 
-              {/* Horizontal Scrollable Items */}
-              <div className="p-4">
-                <div className="overflow-x-auto scrollbar-hide">
-                  <div
-                    className="flex space-x-4 pb-2"
-                    style={{ minWidth: "max-content" }}
-                  >
-                    {specialItems.map((item) => (
-                      <div key={item.id} className="flex-shrink-0 w-48">
-                        <div className="text-center">
-                          {/* Circular Image with Price Badge */}
-                          <div className="relative inline-block mb-3">
+              {/* Enhanced Items Section */}
+              <div className="p-6 lg:p-8">
+                {/* Scroll Hint */}
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`w-1 h-8 bg-gradient-to-b ${
+                        currentTheme.gradients.button ||
+                        "from-orange-400 to-red-400"
+                      } rounded-full`}
+                    ></div>
+                    <div>
+                      <h4
+                        className="text-lg font-bold"
+                        style={{ color: currentTheme.colors.text }}
+                      >
+                        Today's Specials
+                      </h4>
+                      <p
+                        className="text-xs"
+                        style={{ color: currentTheme.colors.textSecondary }}
+                      >
+                        Swipe to explore more →
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* FIXED: Enhanced Horizontal Scrollable Items */}
+                <div className="relative">
+                  <div className="overflow-x-auto scrollbar-hide">
+                    <div
+                      className="flex gap-6 pb-4"
+                      style={{ minWidth: "max-content" }}
+                    >
+                      {specialItems.map((item, index) => (
+                        <div
+                          key={item.id}
+                          className="flex-shrink-0 w-80 group cursor-pointer"
+                          style={{ animationDelay: `${index * 100}ms` }}
+                        >
+                          <div className="relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border border-gray-100 overflow-hidden">
+                            {/* Special Badge */}
+                            <div className="absolute top-4 left-4 z-10">
+                              <div
+                                className={`px-3 py-1 bg-gradient-to-r ${
+                                  currentTheme.gradients.button ||
+                                  "from-orange-400 to-red-400"
+                                } text-white text-xs font-bold rounded-full shadow-lg flex items-center gap-1`}
+                              >
+                                <Sparkles className="w-3 h-3" />
+                                SPECIAL
+                              </div>
+                            </div>
+
+                            {/* FIXED: Top-Right Corner - Veg Indicator and Price */}
                             <div
-                              className="w-24 h-24 rounded-full overflow-hidden border-2 mx-auto"
+                              className="absolute top-4 right-4 z-10 flex items-center gap-2 bg-white rounded-full px-3 py-1 shadow-lg border-2"
                               style={{
                                 borderColor: currentTheme.colors.primary + "30",
                               }}
                             >
-                              {item.image_url ? (
-                                <img
-                                  src={item.image_url}
-                                  alt={item.name}
-                                  className="w-full h-full object-cover"
+                              {/* Vegetarian Indicator */}
+                              <div className="w-5 h-5 border-2 border-green-500 rounded-sm flex items-center justify-center bg-white">
+                                <div className="w-2.5 h-2.5 bg-green-500 rounded-full"></div>
+                              </div>
+
+                              {/* Price */}
+                              <div className="flex items-center gap-1">
+                                <IndianRupee
+                                  className="w-3 h-3"
+                                  style={{ color: currentTheme.colors.primary }}
                                 />
-                              ) : (
+                                <span
+                                  className="font-bold text-sm"
+                                  style={{ color: currentTheme.colors.primary }}
+                                >
+                                  {item.price}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Enhanced Image Section */}
+                            <div className="relative pt-6 pb-4 px-6">
+                              <div className="relative mx-auto w-32 h-32">
+                                {/* Glow Effect Behind Image */}
+                                <div className="absolute inset-0 bg-gradient-to-br from-orange-200/50 to-red-200/50 rounded-full blur-xl group-hover:scale-110 transition-transform duration-500"></div>
+
+                                {/* Main Image Container */}
                                 <div
-                                  className="w-full h-full flex items-center justify-center"
+                                  className="relative w-full h-full rounded-full overflow-hidden border-4 shadow-xl group-hover:scale-105 transition-transform duration-500"
                                   style={{
-                                    backgroundColor:
-                                      currentTheme.colors.background,
+                                    borderColor:
+                                      currentTheme.colors.primary + "60",
                                   }}
                                 >
-                                  <Utensils
-                                    className="h-8 w-8"
+                                  {item.image_url ? (
+                                    <img
+                                      src={item.image_url}
+                                      alt={item.name}
+                                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                                      <Utensils
+                                        className="h-12 w-12"
+                                        style={{
+                                          color:
+                                            currentTheme.colors.textSecondary,
+                                        }}
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Enhanced Content Section - Data Only */}
+                            <div className="px-6 pb-6">
+                              {/* Description with better text handling */}
+                              {item.description && (
+                                <div className="text-center mb-4">
+                                  <p
+                                    className="text-sm leading-relaxed"
                                     style={{
                                       color: currentTheme.colors.textSecondary,
                                     }}
-                                  />
+                                  >
+                                    {item.description.length > 120
+                                      ? `${item.description.substring(
+                                          0,
+                                          120
+                                        )}...`
+                                      : item.description}
+                                  </p>
+                                  {item.description.length > 120 && (
+                                    <button
+                                      className="text-xs font-semibold hover:underline transition-colors duration-200 mt-2"
+                                      style={{
+                                        color: currentTheme.colors.primary,
+                                      }}
+                                    >
+                                      Read more
+                                    </button>
+                                  )}
                                 </div>
                               )}
-                            </div>
 
-                            {/* Vegetarian Indicator */}
-                            <div className="absolute top-0 left-0">
-                              <div
-                                className="w-4 h-4 border rounded-sm flex items-center justify-center"
-                                style={{
-                                  borderColor:
-                                    currentTheme.colors.success || "#22c55e",
-                                  backgroundColor: currentTheme.colors.surface,
-                                }}
-                              >
-                                <div
-                                  className="w-2 h-2 rounded-full"
-                                  style={{
-                                    backgroundColor:
-                                      currentTheme.colors.success || "#22c55e",
-                                  }}
-                                ></div>
-                              </div>
-                            </div>
-
-                            {/* Price Badge */}
-                            <div className="absolute -top-1 -right-1">
-                              <div
-                                className="px-2 py-1 rounded text-xs font-bold border"
-                                style={{
-                                  backgroundColor: currentTheme.colors.surface,
-                                  borderColor:
-                                    currentTheme.colors.primary + "30",
-                                  color: currentTheme.colors.text,
-                                }}
-                              >
-                                Rs. {item.price}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Item Name */}
-                          <h4
-                            className="font-bold text-sm mb-2 leading-tight"
-                            style={{
-                              color: currentTheme.colors.text,
-                              fontFamily: currentTheme.fonts.heading,
-                            }}
-                          >
-                            {item.name}
-                          </h4>
-
-                          {/* Description */}
-                          {item.description && (
-                            <div
-                              className="text-xs leading-relaxed"
-                              style={{
-                                color: currentTheme.colors.textSecondary,
-                              }}
-                            >
-                              <p className="mb-1">
-                                {item.description.length > 80
-                                  ? `${item.description.substring(0, 80)}...`
-                                  : item.description}
-                              </p>
-                              {item.description.length > 80 && (
+                              {/* Dish Name Button */}
+                              <div className="mt-4">
                                 <button
-                                  className="font-medium"
-                                  style={{ color: currentTheme.colors.primary }}
+                                  className={`w-full py-3 px-4 bg-gradient-to-r ${
+                                    currentTheme.gradients.button ||
+                                    "from-orange-400 to-red-400"
+                                  } text-white font-semibold rounded-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300 text-base text-center`}
                                 >
-                                  Read more
+                                  {item.name}
                                 </button>
-                              )}
+                              </div>
                             </div>
-                          )}
+
+                            {/* Hover Overlay Effect */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none rounded-2xl"></div>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
+
+                  {/* Scroll Indicators */}
+                  {specialItems.length > 3 && (
+                    <div className="flex justify-center mt-6 gap-2">
+                      {[...Array(Math.ceil(specialItems.length / 3))].map(
+                        (_, i) => (
+                          <div
+                            key={i}
+                            className="w-2 h-2 rounded-full bg-gray-300 transition-colors duration-300 hover:bg-gray-400"
+                          ></div>
+                        )
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1836,259 +2590,688 @@ export const PublicRestaurantView: React.FC = () => {
         {restaurant?.description && (
           <div
             id="about-us"
-            className="rounded-xl shadow-lg border p-4"
+            className="relative rounded-2xl shadow-2xl border overflow-hidden"
             style={{
               backgroundColor: currentTheme.colors.surface,
               borderColor: currentTheme.colors.primary + "20",
             }}
           >
-            <h3
-              className="text-lg font-bold mb-3 flex items-center"
-              style={{
-                color: currentTheme.colors.text,
-                fontFamily: currentTheme.fonts.heading,
-              }}
-            >
-              <Utensils
-                className="h-5 w-5 mr-2"
-                style={{ color: currentTheme.colors.primary }}
-              />
-              About Us
-            </h3>
-            <p
-              className="text-sm leading-relaxed"
-              style={{ color: currentTheme.colors.textSecondary }}
-            >
-              {restaurant.description}
-            </p>
+            {/* Background Decorative Elements */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-orange-100/30 to-transparent rounded-full blur-2xl"></div>
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-blue-100/20 to-transparent rounded-full blur-xl"></div>
+
+            {/* Header Section */}
+            <div className="relative p-8 pb-6">
+              <div className="flex items-center justify-center mb-6">
+                {/* Icon with glow effect */}
+                <div className="relative">
+                  <div
+                    className="absolute inset-0 rounded-full blur-lg opacity-30"
+                    style={{ backgroundColor: currentTheme.colors.primary }}
+                  ></div>
+                  <div
+                    className="relative w-16 h-16 rounded-full flex items-center justify-center shadow-lg border-2"
+                    style={{
+                      backgroundColor: currentTheme.colors.surface,
+                      borderColor: currentTheme.colors.primary + "30",
+                    }}
+                  >
+                    <Utensils
+                      className="h-8 w-8 animate-pulse"
+                      style={{ color: currentTheme.colors.primary }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Title */}
+              <h3
+                className="text-3xl font-bold text-center mb-2 tracking-wide"
+                style={{
+                  color: currentTheme.colors.text,
+                  fontFamily: currentTheme.fonts.heading,
+                }}
+              >
+                About Us
+              </h3>
+
+              {/* Subtitle with decorative line */}
+              <div className="flex items-center justify-center mb-8">
+                <div className="h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent flex-1 max-w-24"></div>
+                <span
+                  className="mx-4 text-sm font-medium uppercase tracking-wider"
+                  style={{ color: currentTheme.colors.textSecondary }}
+                >
+                  Our Story
+                </span>
+                <div className="h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent flex-1 max-w-24"></div>
+              </div>
+            </div>
+
+            {/* Content Section */}
+            <div className="relative px-8 pb-8">
+              <div className="max-w-4xl mx-auto">
+                {/* Quote mark decoration */}
+                <div className="relative">
+                  <div
+                    className="absolute -top-4 -left-2 text-6xl font-serif opacity-20 leading-none"
+                    style={{ color: currentTheme.colors.primary }}
+                  >
+                    "
+                  </div>
+
+                  {/* Description text */}
+                  <p
+                    className="text-lg leading-relaxed text-center font-medium relative z-10 italic"
+                    style={{
+                      color: currentTheme.colors.text,
+                      lineHeight: "1.8",
+                    }}
+                  >
+                    {restaurant.description}
+                  </p>
+
+                  <div
+                    className="absolute -bottom-4 -right-2 text-6xl font-serif opacity-20 leading-none rotate-180"
+                    style={{ color: currentTheme.colors.primary }}
+                  >
+                    "
+                  </div>
+                </div>
+
+                {/* Bottom decorative element */}
+                <div className="flex justify-center mt-8">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-2 h-2 rounded-full"
+                      style={{ backgroundColor: currentTheme.colors.primary }}
+                    ></div>
+                    <div
+                      className="w-8 h-px"
+                      style={{
+                        backgroundColor: currentTheme.colors.primary + "50",
+                      }}
+                    ></div>
+                    <div
+                      className="w-3 h-3 rounded-full border-2"
+                      style={{ borderColor: currentTheme.colors.primary }}
+                    ></div>
+                    <div
+                      className="w-8 h-px"
+                      style={{
+                        backgroundColor: currentTheme.colors.primary + "50",
+                      }}
+                    ></div>
+                    <div
+                      className="w-2 h-2 rounded-full"
+                      style={{ backgroundColor: currentTheme.colors.primary }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom accent border */}
+            <div
+              className="h-1 w-full bg-gradient-to-r from-transparent via-current to-transparent opacity-20"
+              style={{ color: currentTheme.colors.primary }}
+            ></div>
           </div>
         )}
 
         {/* Contact & Location */}
         <div
           id="contact-location"
-          className="rounded-xl shadow-lg border p-6"
+          className="relative rounded-2xl shadow-2xl border overflow-hidden"
           style={{
             backgroundColor: currentTheme.colors.surface,
             borderColor: currentTheme.colors.primary + "20",
           }}
         >
-          <h3
-            className="text-2xl font-bold mb-6"
-            style={{
-              color: currentTheme.colors.text,
-              fontFamily: currentTheme.fonts.heading,
-            }}
-          >
-            Contact & Location
-          </h3>
+          {/* Background Decorative Elements */}
+          <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-blue-100/20 to-transparent rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-green-100/20 to-transparent rounded-full blur-2xl"></div>
 
-          <div className="space-y-6">
-            {/* Address Section */}
-            {location && (
-              <div>
-                <h4
-                  className="text-lg font-semibold mb-2"
+          {/* Header Section */}
+          <div className="relative p-8 pb-6">
+            <div className="flex items-center justify-center mb-6">
+              {/* Icon with glow effect */}
+              <div className="relative">
+                <div
+                  className="absolute inset-0 rounded-full blur-lg opacity-30"
+                  style={{ backgroundColor: currentTheme.colors.primary }}
+                ></div>
+                <div
+                  className="relative w-16 h-16 rounded-full flex items-center justify-center shadow-lg border-2"
                   style={{
-                    color: currentTheme.colors.text,
-                    fontFamily: currentTheme.fonts.heading,
+                    backgroundColor: currentTheme.colors.surface,
+                    borderColor: currentTheme.colors.primary + "30",
                   }}
                 >
-                  Address
-                </h4>
-                <p
-                  className="text-base mb-2"
-                  style={{ color: currentTheme.colors.textSecondary }}
-                >
-                  {[
-                    location.street,
-                    location.city,
-                    location.state,
-                    location.zip_code,
-                    "US",
-                  ]
-                    .filter(Boolean)
-                    .join(", ")}
-                </p>
-                <button
-                  className="text-base font-medium"
-                  style={{ color: currentTheme.colors.primary }}
-                >
-                  Get Directions
-                </button>
-              </div>
-            )}
-
-            {/* Hours Section */}
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <h4
-                  className="text-lg font-semibold"
-                  style={{
-                    color: currentTheme.colors.text,
-                    fontFamily: currentTheme.fonts.heading,
-                  }}
-                >
-                  Hours
-                </h4>
-                <span
-                  className="text-base font-medium"
-                  style={{
-                    color: isOpenNow
-                      ? currentTheme.colors.success || "#22c55e"
-                      : currentTheme.colors.error || "#ef4444",
-                  }}
-                >
-                  {isOpenNow ? "Open Now" : "Closed"}
-                </span>
-              </div>
-
-              <div className="space-y-1">
-                {DAYS.map((day, index) => {
-                  const dayHours = hours.find((h) => h.day_of_week === index);
-                  const isToday = index === new Date().getDay();
-                  return (
-                    <div key={day} className="flex justify-between text-sm">
-                      <span
-                        style={{
-                          color: isToday
-                            ? currentTheme.colors.text
-                            : currentTheme.colors.textSecondary,
-                          fontWeight: isToday ? "bold" : "normal",
-                        }}
-                      >
-                        {day}:
-                      </span>
-                      <span
-                        style={{
-                          color: isToday
-                            ? currentTheme.colors.text
-                            : currentTheme.colors.textSecondary,
-                          fontWeight: isToday ? "bold" : "normal",
-                        }}
-                      >
-                        {dayHours?.is_open
-                          ? `${dayHours.open_time} - ${dayHours.close_time}`
-                          : "Closed"}
-                      </span>
-                    </div>
-                  );
-                })}
+                  <MapPin
+                    className="h-8 w-8 animate-pulse"
+                    style={{ color: currentTheme.colors.primary }}
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Contact Section */}
-            {restaurant?.contact_number && (
-              <div>
-                <h4
-                  className="text-lg font-semibold mb-2"
+            {/* Title */}
+            <h3
+              className="text-3xl font-bold text-center mb-2 tracking-wide"
+              style={{
+                color: currentTheme.colors.text,
+                fontFamily: currentTheme.fonts.heading,
+              }}
+            >
+              Contact & Location
+            </h3>
+
+            {/* Subtitle with decorative line */}
+            <div className="flex items-center justify-center mb-8">
+              <div className="h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent flex-1 max-w-24"></div>
+              <span
+                className="mx-4 text-sm font-medium uppercase tracking-wider"
+                style={{ color: currentTheme.colors.textSecondary }}
+              >
+                Get In Touch
+              </span>
+              <div className="h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent flex-1 max-w-24"></div>
+            </div>
+          </div>
+
+          {/* Main Content - 2 Column Layout */}
+          <div className="relative px-8 pb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Left Column - Hours Section (Full Height) */}
+              <div className="relative group">
+                <div
+                  className="p-6 rounded-xl border-2 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 h-full"
                   style={{
-                    color: currentTheme.colors.text,
-                    fontFamily: currentTheme.fonts.heading,
+                    backgroundColor: currentTheme.colors.background,
+                    borderColor: currentTheme.colors.primary + "20",
                   }}
                 >
-                  Contact
-                </h4>
-                <div className="flex items-center justify-between">
-                  <span
-                    className="text-lg"
-                    style={{ color: currentTheme.colors.textSecondary }}
-                  >
-                    {restaurant.contact_number}
-                  </span>
-                  <button
-                    className="text-base font-medium"
-                    style={{ color: currentTheme.colors.primary }}
-                  >
-                    Call now
-                  </button>
+                  {/* Icon */}
+                  <div className="flex justify-center mb-4">
+                    <div
+                      className="w-12 h-12 rounded-full flex items-center justify-center"
+                      style={{
+                        backgroundColor: currentTheme.colors.success + "10",
+                      }}
+                    >
+                      <svg
+                        className="h-6 w-6"
+                        style={{ color: currentTheme.colors.success }}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12,6 12,12 16,14" />
+                      </svg>
+                    </div>
+                  </div>
+
+                  {/* Title with Status */}
+                  <div className="text-center mb-6">
+                    <h4
+                      className="text-xl font-bold mb-3"
+                      style={{
+                        color: currentTheme.colors.text,
+                        fontFamily: currentTheme.fonts.heading,
+                      }}
+                    >
+                      Operating Hours
+                    </h4>
+                    <span
+                      className="inline-flex items-center px-4 py-2 rounded-full text-sm font-bold"
+                      style={{
+                        backgroundColor: isOpenNow
+                          ? currentTheme.colors.success + "20"
+                          : currentTheme.colors.error + "20",
+                        color: isOpenNow
+                          ? currentTheme.colors.success
+                          : currentTheme.colors.error,
+                      }}
+                    >
+                      <div
+                        className="w-2 h-2 rounded-full mr-2"
+                        style={{
+                          backgroundColor: isOpenNow
+                            ? currentTheme.colors.success
+                            : currentTheme.colors.error,
+                        }}
+                      ></div>
+                      {isOpenNow ? "Open Now" : "Closed"}
+                    </span>
+                  </div>
+
+                  {/* Hours List */}
+                  <div className="space-y-3">
+                    {DAYS.map((day, index) => {
+                      const dayHours = hours.find(
+                        (h) => h.day_of_week === index
+                      );
+                      const isToday = index === new Date().getDay();
+                      return (
+                        <div
+                          key={day}
+                          className={`flex justify-between items-center text-sm p-3 rounded-lg ${
+                            isToday ? "shadow-sm" : ""
+                          }`}
+                          style={{
+                            backgroundColor: isToday
+                              ? currentTheme.colors.primary + "08"
+                              : "transparent",
+                            borderLeft: isToday
+                              ? `3px solid ${currentTheme.colors.primary}`
+                              : "3px solid transparent",
+                          }}
+                        >
+                          <span
+                            className="font-medium"
+                            style={{
+                              color: isToday
+                                ? currentTheme.colors.text
+                                : currentTheme.colors.textSecondary,
+                              fontWeight: isToday ? "bold" : "normal",
+                            }}
+                          >
+                            {day}
+                          </span>
+                          <span
+                            style={{
+                              color: isToday
+                                ? currentTheme.colors.text
+                                : currentTheme.colors.textSecondary,
+                              fontWeight: isToday ? "bold" : "normal",
+                            }}
+                          >
+                            {dayHours?.is_open
+                              ? `${dayHours.open_time} - ${dayHours.close_time}`
+                              : "Closed"}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
-            )}
+
+              {/* Right Column - Contact & Address (Stacked) */}
+              <div className="space-y-6">
+                {/* Contact Section (Top Right) */}
+                {restaurant?.contact_number && (
+                  <div className="relative group">
+                    <div
+                      className="p-6 rounded-xl border-2 transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
+                      style={{
+                        backgroundColor: currentTheme.colors.background,
+                        borderColor: currentTheme.colors.primary + "20",
+                      }}
+                    >
+                      {/* Icon */}
+                      <div className="flex justify-center mb-4">
+                        <div
+                          className="w-12 h-12 rounded-full flex items-center justify-center"
+                          style={{
+                            backgroundColor: currentTheme.colors.accent + "10",
+                          }}
+                        >
+                          <Phone
+                            className="h-6 w-6"
+                            style={{ color: currentTheme.colors.accent }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Title */}
+                      <h4
+                        className="text-xl font-bold text-center mb-4"
+                        style={{
+                          color: currentTheme.colors.text,
+                          fontFamily: currentTheme.fonts.heading,
+                        }}
+                      >
+                        Contact Us
+                      </h4>
+
+                      {/* Phone Number */}
+                      <div className="text-center mb-4">
+                        <span
+                          className="text-lg font-semibold"
+                          style={{ color: currentTheme.colors.text }}
+                        >
+                          {restaurant.contact_number}
+                        </span>
+                      </div>
+
+                      {/* Action Button */}
+                      <div className="text-center">
+                        <button
+                          className="inline-flex items-center px-6 py-3 rounded-lg text-sm font-semibold transition-all duration-200 hover:shadow-md w-full justify-center"
+                          style={{
+                            backgroundColor: currentTheme.colors.accent + "10",
+                            color: currentTheme.colors.accent,
+                          }}
+                        >
+                          <Phone className="h-4 w-4 mr-2" />
+                          Call Now
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Address Section (Bottom Right) */}
+                {location && (
+                  <div className="relative group">
+                    <div
+                      className="p-6 rounded-xl border-2 transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
+                      style={{
+                        backgroundColor: currentTheme.colors.background,
+                        borderColor: currentTheme.colors.primary + "20",
+                      }}
+                    >
+                      {/* Icon */}
+                      <div className="flex justify-center mb-4">
+                        <div
+                          className="w-12 h-12 rounded-full flex items-center justify-center"
+                          style={{
+                            backgroundColor: currentTheme.colors.primary + "10",
+                          }}
+                        >
+                          <MapPin
+                            className="h-6 w-6"
+                            style={{ color: currentTheme.colors.primary }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Title */}
+                      <h4
+                        className="text-xl font-bold text-center mb-4"
+                        style={{
+                          color: currentTheme.colors.text,
+                          fontFamily: currentTheme.fonts.heading,
+                        }}
+                      >
+                        Our Location
+                      </h4>
+
+                      {/* Address Text */}
+                      <p
+                        className="text-sm text-center leading-relaxed mb-4"
+                        style={{ color: currentTheme.colors.textSecondary }}
+                      >
+                        {[
+                          location.street,
+                          location.city,
+                          location.state,
+                          location.zip_code,
+                          "US",
+                        ]
+                          .filter(Boolean)
+                          .join(", ")}
+                      </p>
+
+                      {/* Action Button */}
+                      <div className="text-center">
+                        <button
+                          className="inline-flex items-center px-6 py-3 rounded-lg text-sm font-semibold transition-all duration-200 hover:shadow-md w-full justify-center"
+                          style={{
+                            backgroundColor: currentTheme.colors.primary + "10",
+                            color: currentTheme.colors.primary,
+                          }}
+                        >
+                          <MapPin className="h-4 w-4 mr-2" />
+                          Get Directions
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Bottom decorative element */}
+            <div className="flex justify-center mt-8">
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-2 h-2 rounded-full"
+                  style={{ backgroundColor: currentTheme.colors.primary }}
+                ></div>
+                <div
+                  className="w-8 h-px"
+                  style={{
+                    backgroundColor: currentTheme.colors.primary + "50",
+                  }}
+                ></div>
+                <div
+                  className="w-3 h-3 rounded-full border-2"
+                  style={{ borderColor: currentTheme.colors.primary }}
+                ></div>
+                <div
+                  className="w-8 h-px"
+                  style={{
+                    backgroundColor: currentTheme.colors.primary + "50",
+                  }}
+                ></div>
+                <div
+                  className="w-2 h-2 rounded-full"
+                  style={{ backgroundColor: currentTheme.colors.primary }}
+                ></div>
+              </div>
+            </div>
           </div>
+
+          {/* Bottom accent border */}
+          <div
+            className="h-1 w-full bg-gradient-to-r from-transparent via-current to-transparent opacity-20"
+            style={{ color: currentTheme.colors.primary }}
+          ></div>
         </div>
 
         {/* What Makes Us Special */}
         {features && (
           <div
             id="features"
-            className="rounded-xl shadow-lg border p-6"
+            className="relative rounded-2xl shadow-2xl border overflow-hidden"
             style={{
               backgroundColor: currentTheme.colors.surface,
               borderColor: currentTheme.colors.primary + "20",
             }}
           >
-            <h3
-              className="text-2xl font-bold mb-8 text-center"
-              style={{
-                color: currentTheme.colors.text,
-                fontFamily: currentTheme.fonts.heading,
-              }}
-            >
-              What Makes Us Special
-            </h3>
-            <div className="grid grid-cols-2 gap-8">
-              {Object.entries(features)
-                .filter(
-                  ([key, value]) =>
-                    key !== "id" && key !== "restaurant_id" && value === true
-                )
-                .map(([feature], index) => {
-                  const colors = [
-                    currentTheme.colors.success || "#22c55e", // Green
-                    currentTheme.colors.primary || "#3b82f6", // Blue
-                    currentTheme.colors.accent || "#8b5cf6", // Purple
-                    currentTheme.colors.error || "#ef4444", // Red
-                  ];
-                  const iconColor = colors[index % colors.length];
+            {/* Background Decorative Elements */}
+            <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-purple-100/20 to-transparent rounded-full blur-3xl"></div>
+            <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-blue-100/20 to-transparent rounded-full blur-2xl"></div>
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-24 h-24 bg-gradient-to-r from-green-100/10 to-yellow-100/10 rounded-full blur-xl"></div>
 
-                  const descriptions = {
-                    home_delivery: "Fast delivery to your door",
-                    indoor_seating: "Comfortable dining space",
-                    air_conditioned: "Cool and comfortable",
-                    accepts_cards: "Easy payment options",
-                    family_friendly: "Perfect for all ages",
-                  };
+            {/* Header Section */}
+            <div className="relative p-8 pb-6">
+              <div className="flex items-center justify-center mb-6">
+                {/* Icon with glow effect */}
+                <div className="relative">
+                  <div
+                    className="absolute inset-0 rounded-full blur-lg opacity-30"
+                    style={{ backgroundColor: currentTheme.colors.primary }}
+                  ></div>
+                  <div
+                    className="relative w-16 h-16 rounded-full flex items-center justify-center shadow-lg border-2"
+                    style={{
+                      backgroundColor: currentTheme.colors.surface,
+                      borderColor: currentTheme.colors.primary + "30",
+                    }}
+                  >
+                    <Badge
+                      className="h-8 w-8 animate-pulse"
+                      style={{ color: currentTheme.colors.primary }}
+                    />
+                  </div>
+                </div>
+              </div>
 
-                  return (
-                    <div key={feature} className="text-center p-4">
-                      {/* Icon */}
-                      <div className="flex justify-center mb-4">
+              {/* Title */}
+              <h3
+                className="text-3xl font-bold text-center mb-2 tracking-wide"
+                style={{
+                  color: currentTheme.colors.text,
+                  fontFamily: currentTheme.fonts.heading,
+                }}
+              >
+                What Makes Us Special
+              </h3>
+
+              {/* Subtitle with decorative line */}
+              <div className="flex items-center justify-center mb-8">
+                <div className="h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent flex-1 max-w-24"></div>
+                <span
+                  className="mx-4 text-sm font-medium uppercase tracking-wider"
+                  style={{ color: currentTheme.colors.textSecondary }}
+                >
+                  Our Promise
+                </span>
+                <div className="h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent flex-1 max-w-24"></div>
+              </div>
+            </div>
+
+            {/* Features Grid */}
+            <div className="relative px-8 pb-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {Object.entries(features)
+                  .filter(
+                    ([key, value]) =>
+                      key !== "id" && key !== "restaurant_id" && value === true
+                  )
+                  .map(([feature], index) => {
+                    const colors = [
+                      currentTheme.colors.success || "#22c55e", // Green
+                      currentTheme.colors.primary || "#3b82f6", // Blue
+                      currentTheme.colors.accent || "#8b5cf6", // Purple
+                      currentTheme.colors.error || "#ef4444", // Red
+                      "#f59e0b", // Amber
+                      "#06b6d4", // Cyan
+                    ];
+                    const iconColor = colors[index % colors.length];
+
+                    const descriptions = {
+                      home_delivery: "Fast delivery to your door",
+                      indoor_seating: "Comfortable dining space",
+                      air_conditioned: "Cool and comfortable",
+                      accepts_cards: "Easy payment options",
+                      family_friendly: "Perfect for all ages",
+                    };
+
+                    return (
+                      <div key={feature} className="relative group">
                         <div
-                          className="w-16 h-16 rounded-full flex items-center justify-center"
-                          style={{ backgroundColor: iconColor + "10" }}
+                          className="p-6 rounded-xl border-2 transition-all duration-300 hover:shadow-xl hover:-translate-y-2 h-full"
+                          style={{
+                            backgroundColor: currentTheme.colors.background,
+                            borderColor: currentTheme.colors.primary + "20",
+                          }}
                         >
-                          <div style={{ color: iconColor }}>
-                            {React.cloneElement(getFeatureIcon(feature), {
-                              className: "h-8 w-8",
-                            })}
+                          {/* Icon with enhanced styling */}
+                          <div className="flex justify-center mb-6">
+                            <div className="relative">
+                              {/* Outer glow ring */}
+                              <div
+                                className="absolute inset-0 rounded-full blur-md opacity-20"
+                                style={{ backgroundColor: iconColor }}
+                              ></div>
+
+                              {/* Main icon container */}
+                              <div
+                                className="relative w-16 h-16 rounded-full flex items-center justify-center transition-transform duration-300 group-hover:scale-110 border-2"
+                                style={{
+                                  backgroundColor: iconColor + "10",
+                                  borderColor: iconColor + "30",
+                                }}
+                              >
+                                <div style={{ color: iconColor }}>
+                                  {React.cloneElement(getFeatureIcon(feature), {
+                                    className: "h-8 w-8",
+                                  })}
+                                </div>
+                              </div>
+
+                              {/* Animated ring on hover */}
+                              <div
+                                className="absolute inset-0 rounded-full border-2 opacity-0 group-hover:opacity-100 transition-all duration-300 animate-ping"
+                                style={{ borderColor: iconColor }}
+                              ></div>
+                            </div>
                           </div>
+
+                          {/* Title */}
+                          <h4
+                            className="text-lg font-bold mb-3 text-center"
+                            style={{
+                              color: currentTheme.colors.text,
+                              fontFamily: currentTheme.fonts.heading,
+                            }}
+                          >
+                            {getFeatureLabel(feature)}
+                          </h4>
+
+                          {/* Description */}
+                          <p
+                            className="text-sm text-center leading-relaxed"
+                            style={{ color: currentTheme.colors.textSecondary }}
+                          >
+                            {descriptions[
+                              feature as keyof typeof descriptions
+                            ] || "Great service feature"}
+                          </p>
+
+                          {/* Bottom accent line */}
+                          <div
+                            className="mt-4 mx-auto w-12 h-1 rounded-full transition-all duration-300 group-hover:w-16"
+                            style={{ backgroundColor: iconColor + "30" }}
+                          ></div>
                         </div>
                       </div>
+                    );
+                  })}
+              </div>
 
-                      {/* Title */}
-                      <h4
-                        className="text-lg font-bold mb-2"
-                        style={{
-                          color: currentTheme.colors.text,
-                          fontFamily: currentTheme.fonts.heading,
-                        }}
-                      >
-                        {getFeatureLabel(feature)}
-                      </h4>
-
-                      {/* Description */}
-                      <p
-                        className="text-sm"
-                        style={{ color: currentTheme.colors.textSecondary }}
-                      >
-                        {descriptions[feature as keyof typeof descriptions] ||
-                          "Great service feature"}
-                      </p>
-                    </div>
-                  );
-                })}
+              {/* Bottom decorative element */}
+              <div className="flex justify-center mt-8">
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: currentTheme.colors.primary }}
+                  ></div>
+                  <div
+                    className="w-8 h-px"
+                    style={{
+                      backgroundColor: currentTheme.colors.primary + "50",
+                    }}
+                  ></div>
+                  <div
+                    className="w-3 h-3 rounded-full border-2"
+                    style={{ borderColor: currentTheme.colors.primary }}
+                  ></div>
+                  <div
+                    className="w-8 h-px"
+                    style={{
+                      backgroundColor: currentTheme.colors.primary + "50",
+                    }}
+                  ></div>
+                  <div
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: currentTheme.colors.primary }}
+                  ></div>
+                </div>
+              </div>
             </div>
+
+            {/* Bottom accent border */}
+            <div
+              className="h-1 w-full bg-gradient-to-r from-transparent via-current to-transparent opacity-20"
+              style={{ color: currentTheme.colors.primary }}
+            ></div>
           </div>
         )}
 
@@ -2096,211 +3279,587 @@ export const PublicRestaurantView: React.FC = () => {
         {images.length > 0 && (
           <div
             id="gallery"
-            className="rounded-xl shadow-lg border p-6"
+            className="relative rounded-2xl shadow-2xl border overflow-hidden"
             style={{
               backgroundColor: currentTheme.colors.surface,
               borderColor: currentTheme.colors.primary + "20",
             }}
           >
+            {/* Background Decorative Elements */}
+            <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-yellow-100/20 to-transparent rounded-full blur-3xl"></div>
+            <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-pink-100/20 to-transparent rounded-full blur-2xl"></div>
+            <div className="absolute top-1/2 right-1/4 w-20 h-20 bg-gradient-to-r from-blue-100/10 to-purple-100/10 rounded-full blur-xl"></div>
+
             {/* Header Section */}
-            <div className="text-center mb-6">
-              <div className="flex items-center justify-center mb-3">
-                <Star
-                  className="h-8 w-8 fill-current"
-                  style={{ color: currentTheme.colors.accent || "#fbbf24" }}
-                />
+            <div className="relative p-8 pb-6">
+              <div className="flex items-center justify-center mb-6">
+                {/* Icon with glow effect */}
+                <div className="relative">
+                  <div
+                    className="absolute inset-0 rounded-full blur-lg opacity-30"
+                    style={{ backgroundColor: currentTheme.colors.accent }}
+                  ></div>
+                  <div
+                    className="relative w-16 h-16 rounded-full flex items-center justify-center shadow-lg border-2"
+                    style={{
+                      backgroundColor: currentTheme.colors.surface,
+                      borderColor: currentTheme.colors.accent + "30",
+                    }}
+                  >
+                    <Star
+                      className="h-8 w-8 fill-current animate-pulse"
+                      style={{ color: currentTheme.colors.accent }}
+                    />
+                  </div>
+                </div>
               </div>
+
+              {/* Title */}
               <h3
-                className="text-2xl font-bold mb-2"
+                className="text-3xl font-bold text-center mb-2 tracking-wide"
                 style={{
                   color: currentTheme.colors.text,
                   fontFamily: currentTheme.fonts.heading,
                 }}
               >
-                Gallery
+                Our Gallery
               </h3>
+
+              {/* Subtitle with decorative line */}
+              <div className="flex items-center justify-center mb-4">
+                <div className="h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent flex-1 max-w-24"></div>
+                <span
+                  className="mx-4 text-sm font-medium uppercase tracking-wider"
+                  style={{ color: currentTheme.colors.textSecondary }}
+                >
+                  Visual Stories
+                </span>
+                <div className="h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent flex-1 max-w-24"></div>
+              </div>
+
+              {/* Description */}
               <p
-                className="text-sm"
+                className="text-center text-sm leading-relaxed max-w-md mx-auto"
                 style={{ color: currentTheme.colors.textSecondary }}
               >
-                Limited time offerings crafted with love
+                Discover the ambiance and delicious moments that make our
+                restaurant special
               </p>
             </div>
 
-            {/* Horizontally Scrollable Gallery */}
-            <div className="overflow-x-auto scrollbar-hide">
-              <div
-                className="flex space-x-4 pb-2"
-                style={{ minWidth: "max-content" }}
-              >
-                {images.map((image, index) => (
-                  <div
-                    key={image.id}
-                    className="flex-shrink-0 w-64 aspect-[4/3] rounded-lg overflow-hidden border hover:scale-105 transition-transform duration-300"
-                    style={{ borderColor: currentTheme.colors.primary + "20" }}
+            {/* Gallery Content */}
+            <div className="relative px-8 pb-8">
+              {/* Stats Bar */}
+              <div className="flex items-center justify-center mb-6">
+                <div
+                  className="px-4 py-2 rounded-full border"
+                  style={{
+                    backgroundColor: currentTheme.colors.background,
+                    borderColor: currentTheme.colors.primary + "20",
+                  }}
+                >
+                  <span
+                    className="text-sm font-semibold"
+                    style={{ color: currentTheme.colors.text }}
                   >
-                    <img
-                      src={image.image_url}
-                      alt={image.alt_text}
-                      className="w-full h-full object-cover cursor-pointer"
-                      onClick={() => {
-                        const galleryImages = images.map((img) => ({
-                          url: img.image_url,
-                          alt: img.alt_text,
-                          name: img.alt_text,
-                        }));
-                        openImageViewer(
-                          image.image_url,
-                          image.alt_text,
-                          galleryImages,
-                          index
-                        );
-                      }}
-                    />
-                  </div>
-                ))}
+                    {images.length} Beautiful Images
+                  </span>
+                </div>
+              </div>
+
+              {/* Horizontally Scrollable Gallery */}
+              <div className="overflow-x-auto scrollbar-hide">
+                <div
+                  className="flex space-x-4 pb-2"
+                  style={{ minWidth: "max-content" }}
+                >
+                  {images.map((image, index) => (
+                    <div
+                      key={image.id}
+                      className="flex-shrink-0 group relative"
+                    >
+                      <div
+                        className="w-64 aspect-[4/3] rounded-lg overflow-hidden border-2 shadow-md transition-all duration-300 hover:shadow-xl hover:scale-105 hover:-translate-y-1"
+                        style={{
+                          borderColor: currentTheme.colors.primary + "20",
+                        }}
+                      >
+                        <img
+                          src={image.image_url}
+                          alt={image.alt_text}
+                          className="w-full h-full object-cover cursor-pointer transition-transform duration-500 group-hover:scale-110"
+                          onClick={() => {
+                            const galleryImages = images.map((img) => ({
+                              url: img.image_url,
+                              alt: img.alt_text,
+                              name: img.alt_text,
+                            }));
+                            openImageViewer(
+                              image.image_url,
+                              image.alt_text,
+                              galleryImages,
+                              index
+                            );
+                          }}
+                        />
+
+                        {/* Image overlay */}
+                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center">
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <div
+                              className="w-12 h-12 rounded-full flex items-center justify-center"
+                              style={{
+                                backgroundColor: currentTheme.colors.primary,
+                              }}
+                            >
+                              <svg
+                                className="w-6 h-6 text-white"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"
+                                />
+                              </svg>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Image caption */}
+                      <div className="mt-2 px-2">
+                        <p
+                          className="text-xs text-center leading-tight"
+                          style={{ color: currentTheme.colors.textSecondary }}
+                        >
+                          {image.alt_text.length > 30
+                            ? `${image.alt_text.substring(0, 30)}...`
+                            : image.alt_text}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Bottom decorative element */}
+              <div className="flex justify-center mt-8">
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: currentTheme.colors.accent }}
+                  ></div>
+                  <div
+                    className="w-8 h-px"
+                    style={{
+                      backgroundColor: currentTheme.colors.accent + "50",
+                    }}
+                  ></div>
+                  <div
+                    className="w-3 h-3 rounded-full border-2"
+                    style={{ borderColor: currentTheme.colors.accent }}
+                  ></div>
+                  <div
+                    className="w-8 h-px"
+                    style={{
+                      backgroundColor: currentTheme.colors.accent + "50",
+                    }}
+                  ></div>
+                  <div
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: currentTheme.colors.accent }}
+                  ></div>
+                </div>
               </div>
             </div>
+
+            {/* Bottom accent border */}
+            <div
+              className="h-1 w-full bg-gradient-to-r from-transparent via-current to-transparent opacity-20"
+              style={{ color: currentTheme.colors.accent }}
+            ></div>
           </div>
         )}
 
         {/* Footer */}
         <footer
-          className="mt-16 border-t"
+          className="relative mt-16 overflow-hidden"
           style={{
             backgroundColor: currentTheme.colors.surface,
-            borderColor: currentTheme.colors.primary + "20",
           }}
         >
-          <div className="px-4 py-8">
-            {/* Quick Links and Logo Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-              {/* Quick Links - Left Column */}
-              <div>
-                <h4
-                  className="text-lg font-bold mb-4"
-                  style={{
-                    color: currentTheme.colors.text,
-                    fontFamily: currentTheme.fonts.heading,
-                  }}
-                >
-                  Quick Links
-                </h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <a
-                      href="#"
-                      className="block text-sm hover:underline"
-                      style={{ color: currentTheme.colors.textSecondary }}
-                    >
-                      Home
-                    </a>
-                    <a
-                      href="#"
-                      className="block text-sm hover:underline"
-                      style={{ color: currentTheme.colors.textSecondary }}
-                    >
-                      About Us
-                    </a>
-                    <a
-                      href="#"
-                      className="block text-sm hover:underline"
-                      style={{ color: currentTheme.colors.textSecondary }}
-                    >
-                      Contact
-                    </a>
-                    <a
-                      href="#"
-                      className="block text-sm hover:underline"
-                      style={{ color: currentTheme.colors.textSecondary }}
-                    >
-                      Menu
-                    </a>
-                  </div>
-                  <div className="text-center lg:text-right mr-4">
+          {/* Background Decorative Elements */}
+          <div className="absolute top-0 left-0 w-40 h-40 bg-gradient-to-br from-blue-100/20 to-transparent rounded-full blur-3xl"></div>
+          <div className="absolute top-1/2 right-0 w-32 h-32 bg-gradient-to-bl from-purple-100/20 to-transparent rounded-full blur-2xl"></div>
+          <div className="absolute bottom-0 left-1/3 w-24 h-24 bg-gradient-to-r from-pink-100/15 to-yellow-100/15 rounded-full blur-xl"></div>
+
+          {/* Top Border with Gradient */}
+          <div
+            className="h-1 w-full bg-gradient-to-r from-transparent via-current to-transparent opacity-30"
+            style={{ color: currentTheme.colors.primary }}
+          ></div>
+
+          <div className="relative px-6 py-12">
+            {/* Main Footer Content */}
+            <div className="max-w-7xl mx-auto">
+              {/* Top Section */}
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-12 mb-12">
+                {/* Brand Section - Enhanced */}
+                <div className="lg:col-span-1 text-center lg:text-left">
+                  <div className="relative inline-block mb-6">
+                    {/* Logo with glow effect */}
+                    <div
+                      className="absolute inset-0 rounded-xl blur-md opacity-20"
+                      style={{ backgroundColor: currentTheme.colors.primary }}
+                    ></div>
                     <img
                       src="/assets/image.png"
                       alt="EnerZy Flow"
-                      className="h-16 mx-auto lg:mx-0 lg:ml-auto mb-4"
+                      className="relative h-20 w-auto mx-auto lg:mx-0 drop-shadow-lg"
                     />
-                    <div className="flex justify-center lg:justify-end space-x-4 mr-4 ">
+                  </div>
+
+                  <p
+                    className="text-sm leading-relaxed mb-6 max-w-xs mx-auto lg:mx-0"
+                    style={{ color: currentTheme.colors.textSecondary }}
+                  >
+                    Empowering restaurants with digital excellence. Create
+                    stunning online experiences for your customers.
+                  </p>
+
+                  {/* Enhanced Social Media Icons */}
+                  <div className="flex justify-center lg:justify-start space-x-3">
+                    {[
+                      { icon: Facebook, label: "Facebook", color: "#1877f2" },
+                      { icon: Twitter, label: "Twitter", color: "#1da1f2" },
+                      { icon: Instagram, label: "Instagram", color: "#e4405f" },
+                      { icon: Youtube, label: "YouTube", color: "#ff0000" },
+                    ].map(({ icon: Icon, label, color }) => (
                       <a
-                        aria-label="Facebook Page"
+                        key={label}
+                        aria-label={`${label} Page`}
                         href="#"
-                        className="p-2 rounded-full transition-colors duration-200"
-                        style={{
-                          backgroundColor: currentTheme.colors.primary + "10",
-                          color: currentTheme.colors.primary,
+                        className="group relative"
+                      >
+                        {/* Hover background effect */}
+                        <div
+                          className="absolute inset-0 rounded-full transition-all duration-300 opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100"
+                          style={{ backgroundColor: color + "15" }}
+                        ></div>
+
+                        {/* Main icon container */}
+                        <div
+                          className="relative w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg"
+                          style={{
+                            backgroundColor: currentTheme.colors.primary + "10",
+                          }}
+                        >
+                          <Icon
+                            className="h-5 w-5 transition-all duration-300"
+                            style={{
+                              color: currentTheme.colors.primary,
+                            }}
+                          />
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Quick Links */}
+                <div className="lg:col-span-1">
+                  <h4
+                    className="text-lg font-bold mb-6 flex items-center"
+                    style={{
+                      color: currentTheme.colors.text,
+                      fontFamily: currentTheme.fonts.heading,
+                    }}
+                  >
+                    <div
+                      className="w-1 h-6 rounded-full mr-3"
+                      style={{ backgroundColor: currentTheme.colors.primary }}
+                    ></div>
+                    Quick Links
+                  </h4>
+                  <div className="space-y-3">
+                    {[
+                      { label: "Home", href: "#" },
+                      { label: "About Us", href: "#about-us" },
+                      { label: "Our Menu", href: "#menu" },
+                      { label: "Gallery", href: "#gallery" },
+                      { label: "Contact", href: "#contact-location" },
+                    ].map(({ label, href }) => (
+                      <a
+                        key={label}
+                        href={href}
+                        className="group flex items-center text-sm transition-all duration-200 hover:translate-x-1"
+                        style={{ color: currentTheme.colors.textSecondary }}
+                        onClick={(e) => {
+                          if (href.startsWith("#")) {
+                            e.preventDefault();
+                            const element = document.getElementById(
+                              href.substring(1)
+                            );
+                            if (element) {
+                              element.scrollIntoView({ behavior: "smooth" });
+                            }
+                          }
                         }}
                       >
-                        <Facebook className="h-5 w-5" />
+                        <div
+                          className="w-1.5 h-1.5 rounded-full mr-3 transition-all duration-200"
+                          style={{
+                            backgroundColor:
+                              currentTheme.colors.textSecondary + "40",
+                          }}
+                        ></div>
+                        <span className="group-hover:font-medium transition-all duration-200">
+                          {label}
+                        </span>
                       </a>
-                      <a
-                        aria-label="Twitter Profile"
-                        href="#"
-                        className="p-2 rounded-full transition-colors duration-200"
-                        style={{
-                          backgroundColor: currentTheme.colors.primary + "10",
-                          color: currentTheme.colors.primary,
-                        }}
+                    ))}
+                  </div>
+                </div>
+
+                {/* Services */}
+                <div className="lg:col-span-1">
+                  <h4
+                    className="text-lg font-bold mb-6 flex items-center"
+                    style={{
+                      color: currentTheme.colors.text,
+                      fontFamily: currentTheme.fonts.heading,
+                    }}
+                  >
+                    <div
+                      className="w-1 h-6 rounded-full mr-3"
+                      style={{ backgroundColor: currentTheme.colors.accent }}
+                    ></div>
+                    Our Services
+                  </h4>
+                  <div className="space-y-3">
+                    {[
+                      "Digital Menu Creation",
+                      "Restaurant Websites",
+                      "Online Ordering",
+                      "Brand Development",
+                      "Marketing Solutions",
+                    ].map((service) => (
+                      <div
+                        key={service}
+                        className="flex items-center text-sm"
+                        style={{ color: currentTheme.colors.textSecondary }}
                       >
-                        <Twitter className="h-5 w-5" />
-                      </a>
-                      <a
-                        aria-label="Instagram Profile"
-                        href="#"
-                        className="p-2 rounded-full transition-colors duration-200"
-                        style={{
-                          backgroundColor: currentTheme.colors.primary + "10",
-                          color: currentTheme.colors.primary,
-                        }}
-                      >
-                        <Instagram className="h-5 w-5" />
-                      </a>
-                      <a
-                        aria-label="YouTube Channel"
-                        href="#"
-                        className="p-2 rounded-full transition-colors duration-200"
-                        style={{
-                          backgroundColor: currentTheme.colors.primary + "10",
-                          color: currentTheme.colors.primary,
-                        }}
-                      >
-                        <Youtube className="h-5 w-5" />
-                      </a>
+                        <div
+                          className="w-1.5 h-1.5 rounded-full mr-3"
+                          style={{
+                            backgroundColor: currentTheme.colors.accent + "60",
+                          }}
+                        ></div>
+                        {service}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Contact Info */}
+                <div className="lg:col-span-1">
+                  <h4
+                    className="text-lg font-bold mb-6 flex items-center"
+                    style={{
+                      color: currentTheme.colors.text,
+                      fontFamily: currentTheme.fonts.heading,
+                    }}
+                  >
+                    <div
+                      className="w-1 h-6 rounded-full mr-3"
+                      style={{ backgroundColor: currentTheme.colors.success }}
+                    ></div>
+                    Get in Touch
+                  </h4>
+
+                  <div className="space-y-4">
+                    {/* Email */}
+                    <div className="group">
+                      <div className="flex items-start">
+                        <div
+                          className="w-8 h-8 rounded-lg flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-200"
+                          style={{
+                            backgroundColor: currentTheme.colors.success + "15",
+                          }}
+                        >
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            style={{ color: currentTheme.colors.success }}
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                            />
+                          </svg>
+                        </div>
+                        <div>
+                          <p
+                            className="text-xs font-medium mb-1"
+                            style={{ color: currentTheme.colors.text }}
+                          >
+                            Email
+                          </p>
+                          <a
+                            href="mailto:hello@energyflow.com"
+                            className="text-sm hover:underline transition-all duration-200"
+                            style={{ color: currentTheme.colors.textSecondary }}
+                          >
+                            hello@energyflow.com
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Phone */}
+                    <div className="group">
+                      <div className="flex items-start">
+                        <div
+                          className="w-8 h-8 rounded-lg flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-200"
+                          style={{
+                            backgroundColor: currentTheme.colors.primary + "15",
+                          }}
+                        >
+                          <Phone
+                            className="w-4 h-4"
+                            style={{ color: currentTheme.colors.primary }}
+                          />
+                        </div>
+                        <div>
+                          <p
+                            className="text-xs font-medium mb-1"
+                            style={{ color: currentTheme.colors.text }}
+                          >
+                            Call Us
+                          </p>
+                          <a
+                            href="tel:+1234567890"
+                            className="text-sm hover:underline transition-all duration-200"
+                            style={{ color: currentTheme.colors.textSecondary }}
+                          >
+                            +91 98765 43210
+                          </a>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Logo Section */}
-            </div>
-
-            {/* Copyright and Powered By Section */}
-            <div
-              className="border-t pt-6 flex flex-col lg:flex-row justify-between items-center gap-2"
-              style={{ borderColor: currentTheme.colors.primary + "20" }}
-            >
-              <div className="flex items-center gap-2 text-sm">
-                <span style={{ color: currentTheme.colors.textSecondary }}>
-                  Powered By
-                </span>
-                <span
-                  className="font-bold"
-                  style={{ color: currentTheme.colors.primary }}
-                >
-                  EnerZyFlow
-                </span>
+              {/* Decorative Separator */}
+              <div className="flex items-center justify-center mb-8">
+                <div className="flex items-center space-x-2">
+                  <div
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: currentTheme.colors.primary }}
+                  ></div>
+                  <div
+                    className="w-16 h-px"
+                    style={{
+                      backgroundColor: currentTheme.colors.primary + "50",
+                    }}
+                  ></div>
+                  <div
+                    className="w-4 h-4 rounded-full border-2"
+                    style={{ borderColor: currentTheme.colors.primary }}
+                  ></div>
+                  <div
+                    className="w-16 h-px"
+                    style={{
+                      backgroundColor: currentTheme.colors.primary + "50",
+                    }}
+                  ></div>
+                  <div
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: currentTheme.colors.primary }}
+                  ></div>
+                </div>
               </div>
 
+              {/* Bottom Section */}
               <div
-                className="text-sm"
-                style={{ color: currentTheme.colors.textSecondary }}
+                className="flex flex-col lg:flex-row justify-between items-center gap-6 pt-8 border-t"
+                style={{ borderColor: currentTheme.colors.primary + "20" }}
               >
-                © 2025 All Rights Reserved
+                {/* Powered by section with enhanced styling */}
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span style={{ color: currentTheme.colors.textSecondary }}>
+                      Powered by
+                    </span>
+                    <div
+                      className="px-4 py-2 rounded-full border shadow-sm transition-all duration-200 hover:shadow-md hover:scale-105"
+                      style={{
+                        borderColor: currentTheme.colors.primary + "30",
+                        backgroundColor: currentTheme.colors.primary + "05",
+                      }}
+                    >
+                      <span
+                        className="font-bold text-sm"
+                        style={{ color: currentTheme.colors.primary }}
+                      >
+                        EnerZyFlow
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Copyright with enhanced styling */}
+                <div className="flex items-center gap-4">
+                  <div
+                    className="text-sm font-medium"
+                    style={{ color: currentTheme.colors.textSecondary }}
+                  >
+                    © 2025 All Rights Reserved
+                  </div>
+
+                  {/* Additional links */}
+                  <div className="hidden lg:flex items-center gap-4 text-xs">
+                    <a
+                      href="#"
+                      className="hover:underline transition-all duration-200"
+                      style={{ color: currentTheme.colors.textSecondary }}
+                    >
+                      Privacy Policy
+                    </a>
+                    <span
+                      style={{
+                        color: currentTheme.colors.textSecondary + "50",
+                      }}
+                    >
+                      •
+                    </span>
+                    <a
+                      href="#"
+                      className="hover:underline transition-all duration-200"
+                      style={{ color: currentTheme.colors.textSecondary }}
+                    >
+                      Terms of Service
+                    </a>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
+
+          {/* Bottom accent border */}
+          <div
+            className="h-1 w-full bg-gradient-to-r from-transparent via-current to-transparent opacity-20"
+            style={{ color: currentTheme.colors.primary }}
+          ></div>
         </footer>
       </div>
 
