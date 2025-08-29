@@ -2,32 +2,51 @@
 @tailwind components;
 @tailwind utilities;
 
-@keyframes sparkleMove {
-  0% { 
-    transform: translateX(0) translateY(0); 
-  }
-  100% { 
-    transform: translateX(-100px) translateY(-50px); 
-  }
+/* Global transition for smooth theme changes */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
-@keyframes sparkleMove2 {
-  0% { 
-    transform: translateX(0) translateY(0) scale(1); 
-  }
-  50% { 
-    transform: translateX(50px) translateY(25px) scale(1.1); 
-  }
-  100% { 
-    transform: translateX(0) translateY(0) scale(1); 
-  }
+/* Root container */
+#root {
+  width: 100%;
+  min-height: 100vh;
 }
 
-@keyframes slowPan {
-  0% { 
-    transform: translateX(0) translateY(0); 
-  }
-  100% { 
-    transform: translateX(-22px) translateY(-22px); 
+/* Hide scrollbar but keep functionality - USED in your component */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Accessibility focus styles */
+button:focus,
+a:focus,
+input:focus,
+textarea:focus,
+select:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Responsive images */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Reduced motion support for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
