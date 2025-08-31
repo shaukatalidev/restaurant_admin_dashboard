@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
 import { supabase, MenuCategory, MenuItem } from '../lib/supabase';
 import { useRestaurant } from './useRestaurant';
 
@@ -8,7 +7,6 @@ export const useMenu = () => {
   const [items, setItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
   const { restaurant } = useRestaurant();
 
   useEffect(() => {

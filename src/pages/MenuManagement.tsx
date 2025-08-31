@@ -17,6 +17,16 @@ type EditingItem = {
   id: string;
 };
 
+type MenuItemUpdate = {
+  name?: string;
+  description?: string;
+  price?: number;
+  category_id?: string;
+  image_url?: string;
+  is_available?: boolean;
+  is_special?: boolean;
+};
+
 export const MenuManagement: React.FC = () => {
   const {
     categories,
@@ -29,7 +39,7 @@ export const MenuManagement: React.FC = () => {
     updateItem,
     deleteItem,
   } = useMenu();
-  
+
   const {
     images: galleryImages,
     loading: galleryLoading,
@@ -119,7 +129,7 @@ export const MenuManagement: React.FC = () => {
     }
   };
 
-  const handleUpdateItem = async (id: string, updates: any) => {
+  const handleUpdateItem = async (id: string, updates: MenuItemUpdate) => {
     try {
       await updateItem(id, updates);
 
@@ -165,8 +175,8 @@ export const MenuManagement: React.FC = () => {
   };
 
   // Filter to show only menu-related images
-  const menuImages = galleryImages.filter(img => 
-    img.alt_text.toLowerCase().includes('menu')
+  const menuImages = galleryImages.filter((img) =>
+    img.alt_text.toLowerCase().includes("menu")
   );
 
   if (loading || galleryLoading) {
@@ -224,14 +234,14 @@ export const MenuManagement: React.FC = () => {
       <div className="bg-white shadow-lg rounded-2xl border border-gray-100 p-8">
         <div className="flex items-center gap-3 mb-6">
           <Images className="h-6 w-6 text-blue-600" />
-          <h3 className="text-xl font-semibold text-gray-900">
-            Menu Images
-          </h3>
+          <h3 className="text-xl font-semibold text-gray-900">Menu Images</h3>
         </div>
         <p className="text-gray-600 mb-6">
-          Upload images that showcase your menu offerings, dishes, and food presentation. These images will appear in the menu section alongside individual menu items.
+          Upload images that showcase your menu offerings, dishes, and food
+          presentation. These images will appear in the menu section alongside
+          individual menu items.
         </p>
-        
+
         <div className="space-y-6">
           {/* Upload Section */}
           <div>
@@ -281,7 +291,9 @@ export const MenuManagement: React.FC = () => {
             <div className="text-center py-8 bg-gray-50 rounded-xl border border-gray-200">
               <Images className="mx-auto h-12 w-12 text-gray-400 mb-3" />
               <p className="text-gray-500">No menu images uploaded yet</p>
-              <p className="text-sm text-gray-400">Upload some images to showcase your menu offerings</p>
+              <p className="text-sm text-gray-400">
+                Upload some images to showcase your menu offerings
+              </p>
             </div>
           )}
         </div>
@@ -551,7 +563,18 @@ export const MenuManagement: React.FC = () => {
                   onClick={() => {
                     if (!editItemData.name.trim() || editItemData.price < 0)
                       return;
-                    handleUpdateItem(editItemData.id, editItemData);
+
+                    const updates: MenuItemUpdate = {
+                      name: editItemData.name,
+                      description: editItemData.description,
+                      price: editItemData.price,
+                      category_id: editItemData.category_id,
+                      image_url: editItemData.image_url,
+                      is_available: editItemData.is_available,
+                      is_special: editItemData.is_special,
+                    };
+
+                    handleUpdateItem(editItemData.id, updates);
                     setEditItemData(null);
                   }}
                   className="px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-xl shadow-lg"

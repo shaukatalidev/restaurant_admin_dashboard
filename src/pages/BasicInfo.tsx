@@ -19,12 +19,6 @@ export const BasicInfo: React.FC = () => {
   const [success, setSuccess] = useState(false);
   const [cuisineInput, setCuisineInput] = useState("");
 
-  useEffect(() => {
-  if (restaurant) {
-    console.log("Fetched restaurant.cuisine_types:", restaurant.cuisine_types);
-  }
-}, [restaurant]);
-
   const {
     register,
     handleSubmit,
@@ -70,7 +64,6 @@ export const BasicInfo: React.FC = () => {
       const newCuisineTypes = [...watchedCuisineTypes, cuisineInput.trim()];
       setValue("cuisine_types", newCuisineTypes);
       setCuisineInput("");
-      console.log("Cuisine types after add:", newCuisineTypes);
       await updateRestaurant({ cuisine_types: newCuisineTypes });
     }
   };
