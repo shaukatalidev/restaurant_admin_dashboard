@@ -21,18 +21,18 @@ import {
   Flame,
   Sparkles,
   Facebook,
-  Twitter,
   Instagram,
-  Youtube,
   X,
   Info,
   Tag,
   Phone,
   Gift,
+  Linkedin,
 } from "lucide-react";
 import { useTheme } from "../contexts/ThemeContext";
 import SpinWheel from "./SpinWheel";
 import mainLogo from "../assets/image.png";
+import { useHorizontalScroll } from "../hooks/useHorizontalScroll";
 
 const DAYS = [
   "Sunday",
@@ -155,6 +155,11 @@ export const PublicRestaurantView: React.FC = () => {
   // Menu state
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
+  const categoriesScrollRef = useHorizontalScroll();
+  const menuItemsScrollRef = useHorizontalScroll();
+  const specialItemsScrollRef = useHorizontalScroll();
+  const galleryScrollRef = useHorizontalScroll();
+
   // Carousel state
   const [currentOfferIndex, setCurrentOfferIndex] = useState(0);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -168,11 +173,69 @@ export const PublicRestaurantView: React.FC = () => {
     currentIndex: number;
   } | null>(null);
 
+  // Touch states for swipe support
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [panPosition, setPanPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [imageLoaded, setImageLoaded] = useState(false);
+
   const activeOffers = offers.filter((offer) => offer.is_active);
 
   // Convert URL-friendly name back to search for restaurant
   const getSearchableName = (urlName: string) => {
     return urlName.replace(/-/g, " ");
+  };
+
+  // ADD ALL ENHANCED FUNCTIONS HERE:
+  const resetZoomAndPan = () => {
+    setZoomLevel(1);
+    setPanPosition({ x: 0, y: 0 });
+    setImageLoaded(false);
+  };
+
+  const handleZoomIn = () => {
+    setZoomLevel((prev) => Math.min(prev + 0.5, 3));
+  };
+
+  const handleZoomOut = () => {
+    setZoomLevel((prev) => Math.max(prev - 0.5, 0.5));
+  };
+
+  const handleDoubleClick = () => {
+    if (zoomLevel === 1) {
+      setZoomLevel(2);
+    } else {
+      setZoomLevel(1);
+      setPanPosition({ x: 0, y: 0 });
+    }
+  };
+
+  // Mouse handlers for desktop pan
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (zoomLevel > 1) {
+      setIsDragging(true);
+      setDragStart({
+        x: e.clientX - panPosition.x,
+        y: e.clientY - panPosition.y,
+      });
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (isDragging && zoomLevel > 1) {
+      setPanPosition({
+        x: e.clientX - dragStart.x,
+        y: e.clientY - dragStart.y,
+      });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
   };
 
   useEffect(() => {
@@ -265,7 +328,6 @@ export const PublicRestaurantView: React.FC = () => {
       setItems(itemsResult.data || []);
       setBannerImages(bannerImagesResult.data ?? []);
       setGalleryImages(galleryImagesResult.data ?? []);
-
       setOffers(offersResult.data || []);
     } catch (err: any) {
       setError(err.message || "Failed to load restaurant data");
@@ -293,7 +355,62 @@ export const PublicRestaurantView: React.FC = () => {
     }
   }, [bannerImages.length]);
 
-  const navigateImage = useCallback(
+  // Add this useEffect to calculate if restaurant is open now
+useEffect(() => {
+  const checkIfOpen = () => {
+    if (!hours || hours.length === 0) {
+      setIsOpenNow(false);
+      return;
+    }
+
+    const now = new Date();
+    const currentDay = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    const currentTime = now.toTimeString().slice(0, 5); // Get HH:MM format
+
+    // Find today's hours
+    const todayHours = hours.find(h => h.day_of_week === currentDay);
+    
+    if (!todayHours || !todayHours.is_open) {
+      setIsOpenNow(false);
+      return;
+    }
+
+    // Compare current time with opening hours
+    const openTime = todayHours.open_time;
+    const closeTime = todayHours.close_time;
+    
+    // Convert times to minutes for easy comparison
+    const timeToMinutes = (time: any) => {
+      const [hours, minutes] = time.split(':').map(Number);
+      return hours * 60 + minutes;
+    };
+    
+    const currentMinutes = timeToMinutes(currentTime);
+    const openMinutes = timeToMinutes(openTime);
+    const closeMinutes = timeToMinutes(closeTime);
+    
+    // Handle cases where closing time is after midnight
+    if (closeMinutes < openMinutes) {
+      // Restaurant closes after midnight (e.g., opens at 18:00, closes at 02:00)
+      setIsOpenNow(currentMinutes >= openMinutes || currentMinutes < closeMinutes);
+    } else {
+      // Normal hours (e.g., opens at 09:00, closes at 22:00)
+      setIsOpenNow(currentMinutes >= openMinutes && currentMinutes < closeMinutes);
+    }
+  };
+
+  // Check immediately when hours data changes
+  checkIfOpen();
+  
+  // Update every minute to keep status current
+  const interval = setInterval(checkIfOpen, 60000);
+  
+  return () => clearInterval(interval);
+}, [hours]); // Re-run when hours data changes
+
+
+  // REPLACE THE EXISTING navigateImage WITH THIS:
+  const navigateImageEnhanced = useCallback(
     (direction: "prev" | "next") => {
       if (!fullScreenImage) return;
 
@@ -310,77 +427,61 @@ export const PublicRestaurantView: React.FC = () => {
         alt: newImage.alt,
         currentIndex: newIndex,
       });
+
+      // Reset zoom and pan for new image
+      resetZoomAndPan();
     },
     [fullScreenImage]
   );
 
-  // Keyboard event handling for full-screen viewer
+  // Enhanced keyboard navigation
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       if (!fullScreenImage) return;
 
-      if (e.key === "Escape") {
-        closeImageViewer();
-      } else if (e.key === "ArrowLeft") {
-        navigateImage("prev");
-      } else if (e.key === "ArrowRight") {
-        navigateImage("next");
+      switch (e.key) {
+        case "Escape":
+          closeImageViewerEnhanced();
+          break;
+        case "ArrowLeft":
+          e.preventDefault();
+          navigateImageEnhanced("prev"); // Works regardless of zoom level
+          break;
+        case "ArrowRight":
+          e.preventDefault();
+          navigateImageEnhanced("next"); // Works regardless of zoom level
+          break;
+        case " ": // Spacebar
+          e.preventDefault();
+          navigateImageEnhanced("next");
+          break;
+        case "=":
+        case "+":
+          e.preventDefault();
+          handleZoomIn();
+          break;
+        case "-":
+          e.preventDefault();
+          handleZoomOut();
+          break;
+        case "0": // Reset zoom
+          e.preventDefault();
+          setZoomLevel(1);
+          setPanPosition({ x: 0, y: 0 });
+          break;
       }
     };
 
     if (fullScreenImage) {
       document.addEventListener("keydown", handleKeyPress);
+      document.body.style.overflow = "hidden";
     }
 
     return () => {
       document.removeEventListener("keydown", handleKeyPress);
+      document.body.style.overflow = "unset";
     };
-  }, [fullScreenImage, navigateImage]);
-
-  useEffect(() => {
-    const checkOpenStatus = () => {
-      if (!hours.length) {
-        setIsOpenNow(false);
-        return;
-      }
-
-      const now = new Date();
-      const today = now.getDay();
-
-      const todayHours = hours.find((h) => h.day_of_week === today);
-      if (!todayHours || !todayHours.is_open) {
-        setIsOpenNow(false);
-        return;
-      }
-
-      const [openHour, openMinute] = todayHours.open_time
-        .split(":")
-        .map(Number);
-      const [closeHour, closeMinute] = todayHours.close_time
-        .split(":")
-        .map(Number);
-
-      const openTime = new Date(now);
-      openTime.setHours(openHour, openMinute, 0, 0);
-
-      let closeTime = new Date(now);
-      closeTime.setHours(closeHour, closeMinute, 0, 0);
-
-      if (closeTime <= openTime) {
-        closeTime.setDate(closeTime.getDate() + 1);
-      }
-
-      setIsOpenNow(now >= openTime && now < closeTime);
-    };
-
-    // Check immediately
-    checkOpenStatus();
-
-    // Update every minute
-    const interval = setInterval(checkOpenStatus, 60000);
-
-    return () => clearInterval(interval);
-  }, [hours]);
+  }, [fullScreenImage, navigateImageEnhanced]);
 
   // Filter items
   const filteredItems = items.filter((item) => {
@@ -401,7 +502,13 @@ export const PublicRestaurantView: React.FC = () => {
   };
 
   // Full-screen image viewer functions
-  const openImageViewer = (
+  const closeImageViewerEnhanced = () => {
+    setFullScreenImage(null);
+    resetZoomAndPan();
+    document.body.style.overflow = "unset";
+  };
+
+  const openImageViewerEnhanced = (
     imageUrl: string,
     imageAlt: string,
     allImages: { url: string; alt: string; name?: string }[],
@@ -413,12 +520,61 @@ export const PublicRestaurantView: React.FC = () => {
       images: allImages,
       currentIndex: startIndex,
     });
+    resetZoomAndPan();
     document.body.style.overflow = "hidden";
   };
 
-  const closeImageViewer = () => {
-    setFullScreenImage(null);
-    document.body.style.overflow = "unset";
+  // Touch handlers for swipe support
+  const minSwipeDistance = 50;
+
+  // REPLACE EXISTING TOUCH HANDLERS WITH THESE:
+  const handleTouchStartEnhanced = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      // Single touch - for panning or navigation swipe
+      setTouchEnd(null);
+      setTouchStart(e.touches[0].clientX);
+
+      if (zoomLevel > 1) {
+        setIsDragging(true);
+        setDragStart({
+          x: e.touches[0].clientX - panPosition.x,
+          y: e.touches[0].clientY - panPosition.y,
+        });
+      }
+    } else if (e.touches.length === 2) {
+      // Two touches - could implement pinch zoom here
+      e.preventDefault();
+    }
+  };
+
+  const handleTouchMoveEnhanced = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      setTouchEnd(e.touches[0].clientX);
+
+      if (isDragging && zoomLevel > 1) {
+        setPanPosition({
+          x: e.touches[0].clientX - dragStart.x,
+          y: e.touches[0].clientY - dragStart.y,
+        });
+      }
+    }
+  };
+
+  const handleTouchEndEnhanced = () => {
+    setIsDragging(false);
+
+    if (!touchStart || !touchEnd || zoomLevel > 1) return;
+
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe && fullScreenImage) {
+      navigateImageEnhanced("next");
+    }
+    if (isRightSwipe && fullScreenImage) {
+      navigateImageEnhanced("prev");
+    }
   };
 
   const getFeatureIcon = (feature: string) => {
@@ -1203,7 +1359,7 @@ export const PublicRestaurantView: React.FC = () => {
                         {restaurant.cuisine_types.map((cuisine, index) => (
                           <span
                             key={index}
-                            className="px-4 py-2 rounded-full text-sm font-medium shadow-sm hover:scale-105 transition-all duration-200 cursor-pointer"
+                            className="px-4 py-2 rounded-full text-sm font-medium shadow-sm"
                             style={{
                               backgroundColor:
                                 index % 2 === 0
@@ -1417,7 +1573,7 @@ export const PublicRestaurantView: React.FC = () => {
                     </h2>
 
                     <span
-                      className="inline-flex items-center px-3 sm:px-5 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm lg:text-base font-black shadow-lg transform hover:scale-105 transition-all duration-200 animate-pulse"
+                      className="inline-flex items-center px-3 sm:px-5 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm lg:text-base font-black shadow-lg animate-pulse"
                       style={{
                         backgroundColor: currentTheme.colors.accent,
                         color: currentTheme.colors.surface,
@@ -1473,7 +1629,7 @@ export const PublicRestaurantView: React.FC = () => {
                               <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2 sm:gap-3">
                                 {offer.badge_text && (
                                   <span
-                                    className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-bold shadow-md transform hover:scale-105 transition-all duration-200"
+                                    className="inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-bold shadow-md"
                                     style={{
                                       backgroundColor:
                                         currentTheme.colors.accent,
@@ -1561,7 +1717,7 @@ export const PublicRestaurantView: React.FC = () => {
                                 <div className="relative group">
                                   {/* FIXED: Responsive image container */}
                                   <div
-                                    className="w-64 h-64 sm:w-72 sm:h-72 lg:w-80 lg:h-80 xl:w-96 xl:h-96 rounded-xl overflow-hidden border-2 shadow-2xl bg-gray-100 mx-auto"
+                                    className="w-64 h-64 sm:w-72 sm:h-72 lg:w-80 lg:h-80 xl:w-96 xl:h-96 rounded-xl overflow-hidden border-2 shadow-2xl bg-gray-100 mx-auto cursor-pointer"
                                     style={{
                                       borderColor:
                                         currentTheme.colors.primary + "30",
@@ -1672,6 +1828,7 @@ export const PublicRestaurantView: React.FC = () => {
               <SpinWheel />
             </div>
           )}
+
           {/* FIXED: Our Delicious Menu */}
           {categories.length > 0 && (
             <div id="menu">
@@ -1703,13 +1860,13 @@ export const PublicRestaurantView: React.FC = () => {
                           Our Delicious Menu
                         </h2>
                         <Utensils
-                          className="h-6 w-6"
+                          className="h-6 w-6 drop-shadow-md"
                           style={{ color: currentTheme.colors.accent }}
                         />
                       </div>
                       <p
                         className="text-sm opacity-80"
-                        style={{ color: currentTheme.colors.textSecondary }}
+                        style={{ color: currentTheme.colors.textSecondary}}
                       >
                         Crafted with love, served with passion
                       </p>
@@ -1729,75 +1886,75 @@ export const PublicRestaurantView: React.FC = () => {
 
                     {/* UPDATED: Horizontal scrollable container for mobile */}
                     <div className="w-full overflow-hidden">
-                      <div className="overflow-x-auto scrollbar-hide">
-                        <div className="flex gap-3 pb-2 w-max">
-                          <button
-                            onClick={() => setSelectedCategory("all")}
-                            className={`flex-shrink-0 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 transform hover:scale-105 ${
-                              selectedCategory === "all"
-                                ? `bg-gradient-to-r ${currentTheme.gradients.button} text-white shadow-lg`
-                                : "border-2 hover:shadow-md"
-                            }`}
-                            style={
-                              selectedCategory !== "all"
-                                ? {
-                                    backgroundColor:
-                                      currentTheme.colors.background,
-                                    borderColor:
-                                      currentTheme.colors.primary + "40",
-                                    color: currentTheme.colors.text,
-                                  }
-                                : {}
-                            }
-                          >
-                            <span className="flex items-center gap-2 whitespace-nowrap">
-                              🍽️ All Items
-                              <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs">
-                                {filteredItems.length}
-                              </span>
-                            </span>
-                          </button>
+                      <div
+                        ref={categoriesScrollRef}
+                        className="overflow-x-auto scrollbar-hide"
+                      >
+                        {/* UPDATED: Category Filter Buttons - Remove Focus Outline */}
+<div className="flex gap-3 pb-2 w-max">
+  <button
+    onClick={() => setSelectedCategory("all")}
+    className={`flex-shrink-0 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-0 ${
+      selectedCategory === "all"
+        ? `bg-gradient-to-r ${currentTheme.gradients.button} text-white shadow-lg`
+        : "border-2 hover:shadow-md"
+    }`}
+    style={
+      selectedCategory !== "all"
+        ? {
+            backgroundColor: currentTheme.colors.background,
+            borderColor: currentTheme.colors.primary + "40",
+            color: currentTheme.colors.text,
+          }
+        : {}
+    }
+  >
+    <span className="flex items-center gap-2 whitespace-nowrap">
+      🍽️ All Items
+      <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs">
+        {filteredItems.length}
+      </span>
+    </span>
+  </button>
 
-                          {categories.map((category) => (
-                            <button
-                              key={category.id}
-                              onClick={() => setSelectedCategory(category.id)}
-                              className={`flex-shrink-0 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 transform hover:scale-105 ${
-                                selectedCategory === category.id
-                                  ? `bg-gradient-to-r ${currentTheme.gradients.button} text-white shadow-lg`
-                                  : "border-2 hover:shadow-md"
-                              }`}
-                              style={
-                                selectedCategory !== category.id
-                                  ? {
-                                      backgroundColor:
-                                        currentTheme.colors.background,
-                                      borderColor:
-                                        currentTheme.colors.primary + "40",
-                                      color: currentTheme.colors.text,
-                                    }
-                                  : {}
-                              }
-                            >
-                              <span className="flex items-center gap-2 whitespace-nowrap">
-                                {category.name}
-                                <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs">
-                                  {
-                                    items.filter(
-                                      (item) =>
-                                        item.category_id === category.id &&
-                                        item.is_available
-                                    ).length
-                                  }
-                                </span>
-                              </span>
-                            </button>
-                          ))}
-                        </div>
+  {categories.map((category) => (
+    <button
+      key={category.id}
+      onClick={() => setSelectedCategory(category.id)}
+      className={`flex-shrink-0 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-0 ${
+        selectedCategory === category.id
+          ? `bg-gradient-to-r ${currentTheme.gradients.button} text-white shadow-lg`
+          : "border-2 hover:shadow-md"
+      }`}
+      style={
+        selectedCategory !== category.id
+          ? {
+              backgroundColor: currentTheme.colors.background,
+              borderColor: currentTheme.colors.primary + "40",
+              color: currentTheme.colors.text,
+            }
+          : {}
+      }
+    >
+      <span className="flex items-center gap-2 whitespace-nowrap">
+        {category.name}
+        <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs">
+          {
+            items.filter(
+              (item) =>
+                item.category_id === category.id && item.is_available
+            ).length
+          }
+        </span>
+      </span>
+    </button>
+  ))}
+</div>
+
                       </div>
                     </div>
 
-                    {/* Optional: Scroll indicator for mobile */}
+                    {/*Scroll indicator for mobile */}
                     <div className="flex justify-center mt-2 sm:hidden">
                       <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-black/5">
                         <span
@@ -1832,8 +1989,11 @@ export const PublicRestaurantView: React.FC = () => {
 
                     {/* FIXED: Horizontal Scroll Container with proper containment */}
                     <div className="w-full overflow-hidden">
-                      <div className="overflow-x-auto scrollbar-hide">
-                        <div className="flex gap-4 pb-4 w-max">
+                      <div
+                        ref={menuItemsScrollRef}
+                        className="overflow-x-auto scrollbar-hide"
+                      >
+                        <div className="flex gap-4 pb-2 w-max">
                           {filteredItems.map((item) => (
                             <div
                               key={item.id}
@@ -1843,7 +2003,6 @@ export const PublicRestaurantView: React.FC = () => {
                                 borderColor: currentTheme.colors.primary + "20",
                               }}
                             >
-                              {/* Enhanced Item Image */}
                               <div className="relative aspect-square group">
                                 {item.image_url ? (
                                   <>
@@ -1852,26 +2011,27 @@ export const PublicRestaurantView: React.FC = () => {
                                       alt={item.name}
                                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 cursor-pointer"
                                       onClick={() => {
-                                        const menuImages = filteredItems
-                                          .filter((i) => i.image_url)
-                                          .map((i) => ({
-                                            url: i.image_url,
-                                            alt: i.name,
-                                            name: i.name,
-                                          }));
-                                        const currentIndex =
-                                          menuImages.findIndex(
-                                            (img) => img.url === item.image_url
-                                          );
-                                        openImageViewer(
-                                          item.image_url,
-                                          item.name,
-                                          menuImages,
-                                          currentIndex
-                                        );
+                                        // const menuImages = filteredItems
+                                        //   .filter((i) => i.image_url)
+                                        //   .map((i) => ({
+                                        //     url: i.image_url,
+                                        //     alt: i.name,
+                                        //     name: i.name,
+                                        //   }));
+                                        // const currentIndex =
+                                        //   menuImages.findIndex(
+                                        //     (img) => img.url === item.image_url
+                                        //   );
+                                        // openImageViewerEnhanced(
+                                        //   item.image_url,
+                                        //   item.name,
+                                        //   menuImages,
+                                        //   currentIndex
+                                        // );
                                       }}
                                     />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                    {/* ✅ FIX HERE: Added 'pointer-events-none' to the overlay */}
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
                                   </>
                                 ) : (
                                   <div
@@ -2055,11 +2215,9 @@ export const PublicRestaurantView: React.FC = () => {
 
                   {/* IMPROVED: Enhanced Menu Gallery */}
                   {(() => {
-                    const menuGalleryImages = images.filter((img) =>
-                      img.alt_text.toLowerCase().includes("menu")
-                    );
-                    const menuItemImages = filteredItems.filter(
-                      (item) => item.image_url
+                    const menuGalleryImages = galleryImages.filter(
+                      (img) =>
+                        img.alt_text.toLowerCase() === "menu showcase image"
                     );
 
                     // Combine all menu images for consistent indexing
@@ -2070,17 +2228,10 @@ export const PublicRestaurantView: React.FC = () => {
                         name: img.alt_text,
                         type: "gallery",
                       })),
-                      ...menuItemImages.map((item) => ({
-                        url: item.image_url,
-                        alt: item.name,
-                        name: item.name,
-                        type: "item",
-                      })),
                     ];
 
                     return (
-                      (menuGalleryImages.length > 0 ||
-                        menuItemImages.length > 0) && (
+                      menuGalleryImages.length > 0 && (
                         <div
                           className="mt-8 pt-6 border-t"
                           style={{
@@ -2125,7 +2276,10 @@ export const PublicRestaurantView: React.FC = () => {
 
                           {/* Horizontal Scrollable Gallery - Same as Main Gallery */}
                           <div className="w-full overflow-hidden">
-                            <div className="overflow-x-auto scrollbar-hide">
+                            <div
+                              ref={menuItemsScrollRef}
+                              className="overflow-x-auto scrollbar-hide"
+                            >
                               <div className="flex space-x-4 pb-2 w-max">
                                 {allMenuImages.map((image, index) => (
                                   <div
@@ -2144,9 +2298,9 @@ export const PublicRestaurantView: React.FC = () => {
                                         alt={image.alt}
                                         className="w-full h-full object-cover cursor-pointer transition-transform duration-500 group-hover:scale-110"
                                         onClick={() => {
-                                          openImageViewer(
+                                          openImageViewerEnhanced(
                                             image.url,
-                                            image.name,
+                                            image.alt,
                                             allMenuImages,
                                             index
                                           );
@@ -2154,7 +2308,7 @@ export const PublicRestaurantView: React.FC = () => {
                                       />
 
                                       {/* Image overlay - Same as Main Gallery */}
-                                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center">
+                                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center pointer-events-none">
                                         <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                           <div
                                             className="w-12 h-12 rounded-full flex items-center justify-center"
@@ -2249,6 +2403,7 @@ export const PublicRestaurantView: React.FC = () => {
               </div>
             </div>
           )}
+
           {/* FIXED: Chef's Special Recommendations */}
           {specialItems.length > 0 && (
             <div id="chef-special" className="relative">
@@ -2387,7 +2542,10 @@ export const PublicRestaurantView: React.FC = () => {
                   {/* FIXED: Enhanced Horizontal Scrollable Items */}
                   <div className="relative">
                     <div className="w-full overflow-hidden">
-                      <div className="overflow-x-auto scrollbar-hide">
+                      <div
+                        ref={specialItemsScrollRef}
+                        className="overflow-x-auto scrollbar-hide"
+                      >
                         <div className="flex gap-6 pb-4 w-max">
                           {specialItems.map((item, index) => (
                             <div
@@ -2464,10 +2622,32 @@ export const PublicRestaurantView: React.FC = () => {
 
                                     {/* Main Image Container */}
                                     <div
-                                      className="relative w-full h-full rounded-full overflow-hidden border-4 shadow-xl group-hover:scale-105 transition-transform duration-500"
+                                      className="relative w-full h-full rounded-full overflow-hidden border-4 shadow-xl group-hover:scale-105 transition-transform duration-500 cursor-pointer"
                                       style={{
                                         borderColor:
                                           currentTheme.colors.primary + "60",
+                                      }}
+                                      onClick={() => {
+                                        if (item.image_url) {
+                                          // const specialImages = specialItems
+                                          //   .filter((i) => i.image_url)
+                                          //   .map((i) => ({
+                                          //     url: i.image_url,
+                                          //     alt: i.name,
+                                          //     name: i.name,
+                                          //   }));
+                                          // const currentIndex =
+                                          //   specialImages.findIndex(
+                                          //     (img) =>
+                                          //       img.url === item.image_url
+                                          //   );
+                                          // openImageViewerEnhanced(
+                                          //   item.image_url,
+                                          //   item.name,
+                                          //   specialImages,
+                                          //   currentIndex
+                                          // );
+                                        }
                                       }}
                                     >
                                       {item.image_url ? (
@@ -2530,19 +2710,17 @@ export const PublicRestaurantView: React.FC = () => {
                                     </div>
                                   )}
 
-                                  {/* Dish Name Button */}
-                                  <div className="mt-4">
-                                    <button
-                                      className={`w-full py-3 px-4 bg-gradient-to-r ${
-                                        currentTheme.gradients.button ||
-                                        "from-orange-400 to-red-400"
-                                      } font-semibold rounded-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-300 text-base text-center`}
+                                  {/* Dish Name Display */}
+                                  <div className="mt-4 text-center">
+                                    <h4
+                                      className="text-xl font-bold leading-tight"
                                       style={{
                                         color: currentTheme.colors.text,
+                                        fontFamily: currentTheme.fonts.heading,
                                       }}
                                     >
                                       {item.name}
-                                    </button>
+                                    </h4>
                                   </div>
                                 </div>
 
@@ -2577,6 +2755,7 @@ export const PublicRestaurantView: React.FC = () => {
               </div>
             </div>
           )}
+
           {/* About Us */}
           {restaurant?.description && (
             <div
@@ -2688,27 +2867,17 @@ export const PublicRestaurantView: React.FC = () => {
                       <div
                         className="w-2 h-2 rounded-full"
                         style={{ backgroundColor: currentTheme.colors.primary }}
-                      ></div>
+                      />
                       <div
                         className="w-8 h-px"
                         style={{
                           backgroundColor: currentTheme.colors.primary + "50",
                         }}
-                      ></div>
-                      <div
-                        className="w-3 h-3 rounded-full border-2"
-                        style={{ borderColor: currentTheme.colors.primary }}
-                      ></div>
-                      <div
-                        className="w-8 h-px"
-                        style={{
-                          backgroundColor: currentTheme.colors.primary + "50",
-                        }}
-                      ></div>
+                      />
                       <div
                         className="w-2 h-2 rounded-full"
                         style={{ backgroundColor: currentTheme.colors.primary }}
-                      ></div>
+                      />
                     </div>
                   </div>
                 </div>
@@ -2718,9 +2887,10 @@ export const PublicRestaurantView: React.FC = () => {
               <div
                 className="h-1 w-full bg-gradient-to-r from-transparent via-current to-transparent opacity-20"
                 style={{ color: currentTheme.colors.primary }}
-              ></div>
+              />
             </div>
           )}
+
           {/* Contact & Location */}
           <div
             id="contact-location"
@@ -2731,8 +2901,8 @@ export const PublicRestaurantView: React.FC = () => {
             }}
           >
             {/* Background Decorative Elements */}
-            <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-blue-100/20 to-transparent rounded-full blur-3xl"></div>
-            <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-green-100/20 to-transparent rounded-full blur-2xl"></div>
+            <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-blue-100/20 to-transparent rounded-full blur-3xl" />
+            <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-green-100/20 to-transparent rounded-full blur-2xl" />
 
             {/* Header Section */}
             <div className="relative p-8 pb-6">
@@ -2742,7 +2912,7 @@ export const PublicRestaurantView: React.FC = () => {
                   <div
                     className="absolute inset-0 rounded-full blur-lg opacity-30"
                     style={{ backgroundColor: currentTheme.colors.primary }}
-                  ></div>
+                  />
                   <div
                     className="relative w-16 h-16 rounded-full flex items-center justify-center shadow-lg border-2"
                     style={{
@@ -2777,7 +2947,7 @@ export const PublicRestaurantView: React.FC = () => {
                     background:
                       "linear-gradient(to right, transparent, #d1d5db, transparent)",
                   }}
-                ></div>
+                />
                 <span
                   className="mx-4 text-sm font-medium uppercase tracking-wider"
                   style={{ color: currentTheme.colors.textSecondary }}
@@ -2790,7 +2960,7 @@ export const PublicRestaurantView: React.FC = () => {
                     background:
                       "linear-gradient(to right, transparent, #d1d5db, transparent)",
                   }}
-                ></div>
+                />
               </div>
             </div>
 
@@ -2856,7 +3026,7 @@ export const PublicRestaurantView: React.FC = () => {
                               ? currentTheme.colors.success
                               : currentTheme.colors.error,
                           }}
-                        ></div>
+                        />
                         {isOpenNow ? "Open Now" : "Closed"}
                       </span>
                     </div>
@@ -3059,27 +3229,27 @@ export const PublicRestaurantView: React.FC = () => {
                   <div
                     className="w-2 h-2 rounded-full"
                     style={{ backgroundColor: currentTheme.colors.primary }}
-                  ></div>
+                  />
                   <div
                     className="w-8 h-px"
                     style={{
                       backgroundColor: currentTheme.colors.primary + "50",
                     }}
-                  ></div>
+                  />
                   <div
                     className="w-3 h-3 rounded-full border-2"
                     style={{ borderColor: currentTheme.colors.primary }}
-                  ></div>
+                  />
                   <div
                     className="w-8 h-px"
                     style={{
                       backgroundColor: currentTheme.colors.primary + "50",
                     }}
-                  ></div>
+                  />
                   <div
                     className="w-2 h-2 rounded-full"
                     style={{ backgroundColor: currentTheme.colors.primary }}
-                  ></div>
+                  />
                 </div>
               </div>
             </div>
@@ -3088,8 +3258,9 @@ export const PublicRestaurantView: React.FC = () => {
             <div
               className="h-1 w-full bg-gradient-to-r from-transparent via-current to-transparent opacity-20"
               style={{ color: currentTheme.colors.primary }}
-            ></div>
+            />
           </div>
+
           {/* What Makes Us Special */}
           {features && (
             <div
@@ -3101,9 +3272,9 @@ export const PublicRestaurantView: React.FC = () => {
               }}
             >
               {/* Background Decorative Elements */}
-              <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-purple-100/20 to-transparent rounded-full blur-3xl"></div>
-              <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-blue-100/20 to-transparent rounded-full blur-2xl"></div>
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-24 h-24 bg-gradient-to-r from-green-100/10 to-yellow-100/10 rounded-full blur-xl"></div>
+              <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-purple-100/20 to-transparent rounded-full blur-3xl" />
+              <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-blue-100/20 to-transparent rounded-full blur-2xl" />
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-24 h-24 bg-gradient-to-r from-green-100/10 to-yellow-100/10 rounded-full blur-xl" />
 
               {/* Header Section */}
               <div className="relative p-8 pb-6">
@@ -3113,7 +3284,7 @@ export const PublicRestaurantView: React.FC = () => {
                     <div
                       className="absolute inset-0 rounded-full blur-lg opacity-30"
                       style={{ backgroundColor: currentTheme.colors.primary }}
-                    ></div>
+                    />
                     <div
                       className="relative w-16 h-16 rounded-full flex items-center justify-center shadow-lg border-2"
                       style={{
@@ -3148,7 +3319,7 @@ export const PublicRestaurantView: React.FC = () => {
                       background:
                         "linear-gradient(to right, transparent, #d1d5db, transparent)",
                     }}
-                  ></div>
+                  />
                   <span
                     className="mx-4 text-sm font-medium uppercase tracking-wider"
                     style={{ color: currentTheme.colors.textSecondary }}
@@ -3161,7 +3332,7 @@ export const PublicRestaurantView: React.FC = () => {
                       background:
                         "linear-gradient(to right, transparent, #d1d5db, transparent)",
                     }}
-                  ></div>
+                  />
                 </div>
               </div>
 
@@ -3210,7 +3381,7 @@ export const PublicRestaurantView: React.FC = () => {
                                 <div
                                   className="absolute inset-0 rounded-full blur-md opacity-20"
                                   style={{ backgroundColor: iconColor }}
-                                ></div>
+                                />
 
                                 {/* Main icon container */}
                                 <div
@@ -3234,7 +3405,7 @@ export const PublicRestaurantView: React.FC = () => {
                                 <div
                                   className="absolute inset-0 rounded-full border-2 opacity-0 group-hover:opacity-100 transition-all duration-300 animate-ping"
                                   style={{ borderColor: iconColor }}
-                                ></div>
+                                />
                               </div>
                             </div>
 
@@ -3265,7 +3436,7 @@ export const PublicRestaurantView: React.FC = () => {
                             <div
                               className="mt-4 mx-auto w-12 h-1 rounded-full transition-all duration-300 group-hover:w-16"
                               style={{ backgroundColor: iconColor + "30" }}
-                            ></div>
+                            />
                           </div>
                         </div>
                       );
@@ -3278,27 +3449,27 @@ export const PublicRestaurantView: React.FC = () => {
                     <div
                       className="w-2 h-2 rounded-full"
                       style={{ backgroundColor: currentTheme.colors.primary }}
-                    ></div>
+                    />
                     <div
                       className="w-8 h-px"
                       style={{
                         backgroundColor: currentTheme.colors.primary + "50",
                       }}
-                    ></div>
+                    />
                     <div
                       className="w-3 h-3 rounded-full border-2"
                       style={{ borderColor: currentTheme.colors.primary }}
-                    ></div>
+                    />
                     <div
                       className="w-8 h-px"
                       style={{
                         backgroundColor: currentTheme.colors.primary + "50",
                       }}
-                    ></div>
+                    />
                     <div
                       className="w-2 h-2 rounded-full"
                       style={{ backgroundColor: currentTheme.colors.primary }}
-                    ></div>
+                    />
                   </div>
                 </div>
               </div>
@@ -3307,10 +3478,11 @@ export const PublicRestaurantView: React.FC = () => {
               <div
                 className="h-1 w-full bg-gradient-to-r from-transparent via-current to-transparent opacity-20"
                 style={{ color: currentTheme.colors.primary }}
-              ></div>
+              />
             </div>
           )}
 
+          {/* Gallery */}
           {/* Gallery */}
           {galleryImages.length > 0 && (
             <div
@@ -3322,9 +3494,9 @@ export const PublicRestaurantView: React.FC = () => {
               }}
             >
               {/* Background Decorative Elements */}
-              <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-yellow-100/20 to-transparent rounded-full blur-3xl"></div>
-              <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-pink-100/20 to-transparent rounded-full blur-2xl"></div>
-              <div className="absolute top-1/2 right-1/4 w-20 h-20 bg-gradient-to-r from-blue-100/10 to-purple-100/10 rounded-full blur-xl"></div>
+              <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-yellow-100/20 to-transparent rounded-full blur-3xl" />
+              <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-pink-100/20 to-transparent rounded-full blur-2xl" />
+              <div className="absolute top-1/2 right-1/4 w-20 h-20 bg-gradient-to-r from-blue-100/10 to-purple-100/10 rounded-full blur-xl" />
 
               {/* Header Section */}
               <div className="relative p-8 pb-6">
@@ -3334,7 +3506,7 @@ export const PublicRestaurantView: React.FC = () => {
                     <div
                       className="absolute inset-0 rounded-full blur-lg opacity-30"
                       style={{ backgroundColor: currentTheme.colors.accent }}
-                    ></div>
+                    />
                     <div
                       className="relative w-16 h-16 rounded-full flex items-center justify-center shadow-lg border-2"
                       style={{
@@ -3369,7 +3541,7 @@ export const PublicRestaurantView: React.FC = () => {
                       background:
                         "linear-gradient(to right, transparent, #d1d5db, transparent)",
                     }}
-                  ></div>
+                  />
                   <span
                     className="mx-4 text-sm font-medium uppercase tracking-wider"
                     style={{ color: currentTheme.colors.textSecondary }}
@@ -3382,7 +3554,7 @@ export const PublicRestaurantView: React.FC = () => {
                       background:
                         "linear-gradient(to right, transparent, #d1d5db, transparent)",
                     }}
-                  ></div>
+                  />
                 </div>
 
                 {/* Description */}
@@ -3415,9 +3587,12 @@ export const PublicRestaurantView: React.FC = () => {
                   </div>
                 </div>
 
-                {/* FIXED: Horizontally Scrollable Gallery */}
+                {/* Horizontally Scrollable Gallery */}
                 <div className="w-full overflow-hidden">
-                  <div className="overflow-x-auto scrollbar-hide">
+                  <div
+                    ref={galleryScrollRef}
+                    className="overflow-x-auto scrollbar-hide"
+                  >
                     <div className="flex space-x-4 pb-2 w-max">
                       {galleryImages.map((image, index) => (
                         <div
@@ -3435,22 +3610,23 @@ export const PublicRestaurantView: React.FC = () => {
                               alt={image.alt_text}
                               className="w-full h-full object-cover cursor-pointer transition-transform duration-500 group-hover:scale-110"
                               onClick={() => {
-                                const galleryImages = images.map((img) => ({
-                                  url: img.image_url,
-                                  alt: img.alt_text,
-                                  name: img.alt_text,
-                                }));
-                                openImageViewer(
+                                const allGalleryImages = galleryImages.map(
+                                  (img) => ({
+                                    url: img.image_url,
+                                    alt: img.alt_text,
+                                    name: img.alt_text,
+                                  })
+                                );
+                                openImageViewerEnhanced(
                                   image.image_url,
                                   image.alt_text,
-                                  galleryImages,
+                                  allGalleryImages,
                                   index
                                 );
                               }}
                             />
 
-                            {/* Image overlay */}
-                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center">
+                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 flex items-center justify-center pointer-events-none">
                               <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                 <div
                                   className="w-12 h-12 rounded-full flex items-center justify-center"
@@ -3502,30 +3678,7 @@ export const PublicRestaurantView: React.FC = () => {
                 {/* Bottom decorative element */}
                 <div className="flex justify-center mt-8">
                   <div className="flex items-center gap-2">
-                    <div
-                      className="w-2 h-2 rounded-full"
-                      style={{ backgroundColor: currentTheme.colors.accent }}
-                    ></div>
-                    <div
-                      className="w-8 h-px"
-                      style={{
-                        backgroundColor: currentTheme.colors.accent + "50",
-                      }}
-                    ></div>
-                    <div
-                      className="w-3 h-3 rounded-full border-2"
-                      style={{ borderColor: currentTheme.colors.accent }}
-                    ></div>
-                    <div
-                      className="w-8 h-px"
-                      style={{
-                        backgroundColor: currentTheme.colors.accent + "50",
-                      }}
-                    ></div>
-                    <div
-                      className="w-2 h-2 rounded-full"
-                      style={{ backgroundColor: currentTheme.colors.accent }}
-                    ></div>
+                    {/* ... decorative dots and lines ... */}
                   </div>
                 </div>
               </div>
@@ -3534,9 +3687,10 @@ export const PublicRestaurantView: React.FC = () => {
               <div
                 className="h-1 w-full bg-gradient-to-r from-transparent via-current to-transparent opacity-20"
                 style={{ color: currentTheme.colors.accent }}
-              ></div>
+              />
             </div>
           )}
+
           {/* Footer */}
           <footer
             className="relative mt-16 overflow-hidden"
@@ -3545,15 +3699,15 @@ export const PublicRestaurantView: React.FC = () => {
             }}
           >
             {/* Background Decorative Elements */}
-            <div className="absolute top-0 left-0 w-40 h-40 bg-gradient-to-br from-blue-100/20 to-transparent rounded-full blur-3xl"></div>
-            <div className="absolute top-1/2 right-0 w-32 h-32 bg-gradient-to-bl from-purple-100/20 to-transparent rounded-full blur-2xl"></div>
-            <div className="absolute bottom-0 left-1/3 w-24 h-24 bg-gradient-to-r from-pink-100/15 to-yellow-100/15 rounded-full blur-xl"></div>
+            <div className="absolute top-0 left-0 w-40 h-40 bg-gradient-to-br from-blue-100/20 to-transparent rounded-full blur-3xl" />
+            <div className="absolute top-1/2 right-0 w-32 h-32 bg-gradient-to-bl from-purple-100/20 to-transparent rounded-full blur-2xl" />
+            <div className="absolute bottom-0 left-1/3 w-24 h-24 bg-gradient-to-r from-pink-100/15 to-yellow-100/15 rounded-full blur-xl" />
 
             {/* Top Border with Gradient */}
             <div
               className="h-1 w-full bg-gradient-to-r from-transparent via-current to-transparent opacity-30"
               style={{ color: currentTheme.colors.primary }}
-            ></div>
+            />
 
             <div className="relative px-6 py-12">
               {/* Main Footer Content */}
@@ -3567,7 +3721,7 @@ export const PublicRestaurantView: React.FC = () => {
                       <div
                         className="absolute inset-0 rounded-xl blur-md opacity-20"
                         style={{ backgroundColor: currentTheme.colors.primary }}
-                      ></div>
+                      />
                       <img
                         src={mainLogo}
                         alt="EnerZy Flow"
@@ -3586,26 +3740,38 @@ export const PublicRestaurantView: React.FC = () => {
                     {/* Enhanced Social Media Icons */}
                     <div className="flex justify-center lg:justify-start space-x-3">
                       {[
-                        { icon: Facebook, label: "Facebook", color: "#1877f2" },
-                        { icon: Twitter, label: "Twitter", color: "#1da1f2" },
+                        {
+                          icon: Facebook,
+                          label: "Facebook",
+                          color: "#1877f2",
+                          url: "https://www.facebook.com/share/19obQzdUev/",
+                        },
                         {
                           icon: Instagram,
                           label: "Instagram",
                           color: "#e4405f",
+                          url: "https://www.instagram.com/enerzyflow?igsh=cWhqNDc4MTNwenE1",
                         },
-                        { icon: Youtube, label: "YouTube", color: "#ff0000" },
-                      ].map(({ icon: Icon, label, color }) => (
+                        {
+                          icon: Linkedin,
+                          label: "Linkedin",
+                          color: "#ff0000",
+                          url: "https://www.linkedin.com/company/106605789/admin/page-posts/published/",
+                        },
+                      ].map(({ icon: Icon, label, color, url }) => (
                         <a
                           key={label}
                           aria-label={`${label} Page`}
-                          href="#"
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
                           className="group relative"
                         >
                           {/* Hover background effect */}
                           <div
                             className="absolute inset-0 rounded-full transition-all duration-300 opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100"
                             style={{ backgroundColor: color + "15" }}
-                          ></div>
+                          />
 
                           {/* Main icon container */}
                           <div
@@ -3639,7 +3805,7 @@ export const PublicRestaurantView: React.FC = () => {
                       <div
                         className="w-1 h-6 rounded-full mr-3"
                         style={{ backgroundColor: currentTheme.colors.primary }}
-                      ></div>
+                      />
                       Quick Links
                     </h4>
                     <div className="space-y-3">
@@ -3673,7 +3839,7 @@ export const PublicRestaurantView: React.FC = () => {
                               backgroundColor:
                                 currentTheme.colors.textSecondary + "40",
                             }}
-                          ></div>
+                          />
                           <span className="group-hover:font-medium transition-all duration-200">
                             {label}
                           </span>
@@ -3694,7 +3860,7 @@ export const PublicRestaurantView: React.FC = () => {
                       <div
                         className="w-1 h-6 rounded-full mr-3"
                         style={{ backgroundColor: currentTheme.colors.accent }}
-                      ></div>
+                      />
                       Our Services
                     </h4>
                     <div className="space-y-3">
@@ -3716,7 +3882,7 @@ export const PublicRestaurantView: React.FC = () => {
                               backgroundColor:
                                 currentTheme.colors.accent + "60",
                             }}
-                          ></div>
+                          />
                           {service}
                         </div>
                       ))}
@@ -3735,7 +3901,7 @@ export const PublicRestaurantView: React.FC = () => {
                       <div
                         className="w-1 h-6 rounded-full mr-3"
                         style={{ backgroundColor: currentTheme.colors.success }}
-                      ></div>
+                      />
                       Get in Touch
                     </h4>
 
@@ -3773,13 +3939,13 @@ export const PublicRestaurantView: React.FC = () => {
                               Email
                             </p>
                             <a
-                              href="mailto:hello@energyflow.com"
+                              href="mailto:support@energyflow.com"
                               className="text-sm hover:underline transition-all duration-200"
                               style={{
                                 color: currentTheme.colors.textSecondary,
                               }}
                             >
-                              hello@energyflow.com
+                              support@enerzyflow.com
                             </a>
                           </div>
                         </div>
@@ -3808,13 +3974,13 @@ export const PublicRestaurantView: React.FC = () => {
                               Call Us
                             </p>
                             <a
-                              href="tel:+1234567890"
+                              href="tel:+90025 20720"
                               className="text-sm hover:underline transition-all duration-200"
                               style={{
                                 color: currentTheme.colors.textSecondary,
                               }}
                             >
-                              +91 98765 43210
+                              +91 90025 20720
                             </a>
                           </div>
                         </div>
@@ -3829,27 +3995,27 @@ export const PublicRestaurantView: React.FC = () => {
                     <div
                       className="w-3 h-3 rounded-full"
                       style={{ backgroundColor: currentTheme.colors.primary }}
-                    ></div>
+                    />
                     <div
                       className="w-16 h-px"
                       style={{
                         backgroundColor: currentTheme.colors.primary + "50",
                       }}
-                    ></div>
+                    />
                     <div
                       className="w-4 h-4 rounded-full border-2"
                       style={{ borderColor: currentTheme.colors.primary }}
-                    ></div>
+                    />
                     <div
                       className="w-16 h-px"
                       style={{
                         backgroundColor: currentTheme.colors.primary + "50",
                       }}
-                    ></div>
+                    />
                     <div
                       className="w-3 h-3 rounded-full"
                       style={{ backgroundColor: currentTheme.colors.primary }}
-                    ></div>
+                    />
                   </div>
                 </div>
 
@@ -3873,12 +4039,13 @@ export const PublicRestaurantView: React.FC = () => {
                           backgroundColor: currentTheme.colors.primary + "05",
                         }}
                       >
-                        <span
+                        <a
+                          href="https://www.enerzyflow.com/"
                           className="font-bold text-sm"
                           style={{ color: currentTheme.colors.primary }}
                         >
                           EnerZyFlow
-                        </span>
+                        </a>
                       </div>
                     </div>
                   </div>
@@ -3925,75 +4092,275 @@ export const PublicRestaurantView: React.FC = () => {
             <div
               className="h-1 w-full bg-gradient-to-r from-transparent via-current to-transparent opacity-20"
               style={{ color: currentTheme.colors.primary }}
-            ></div>
+            />
           </footer>
         </div>
       </div>
 
-      {/* Full-Screen Image Viewer Modal */}
+      {/* 🚀 ENHANCED: Full-Screen Image Viewer with Zoom Navigation */}
       {fullScreenImage && (
-        <div className="fixed inset-0 bg-black bg-opacity-95 z-[9999] flex items-center justify-center">
-          {/* Close Button */}
+        <div
+          className="fixed inset-0 z-[9999] bg-black"
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            overflow: "hidden",
+          }}
+          onClick={closeImageViewerEnhanced}
+          onTouchStart={handleTouchStartEnhanced}
+          onTouchMove={handleTouchMoveEnhanced}
+          onTouchEnd={handleTouchEndEnhanced}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+        >
+          {/* ✨ Enhanced Close Button */}
           <button
             aria-label="Close Image Viewer"
-            onClick={closeImageViewer}
-            className="absolute top-4 right-4 z-50 p-3 rounded-full bg-black bg-opacity-50 text-white hover:bg-opacity-70 transition-all duration-200"
+            onClick={(e) => {
+              e.stopPropagation();
+              closeImageViewerEnhanced();
+            }}
+            className="fixed top-4 right-4 z-[100] p-3 rounded-full bg-black bg-opacity-80 text-white hover:bg-opacity-100 transition-all duration-200 backdrop-blur-sm border border-white/20"
+            style={{
+              boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
+            }}
           >
             <X className="h-6 w-6" />
           </button>
 
-          {/* Image Counter */}
-          <div className="absolute top-4 left-4 z-50 px-4 py-2 rounded-full bg-black bg-opacity-50 text-white text-sm">
+          {/* ✨ Enhanced Image Counter */}
+          <div className="fixed top-4 left-4 z-[100] px-4 py-2 rounded-full bg-black bg-opacity-80 text-white text-sm backdrop-blur-sm border border-white/20">
             {fullScreenImage.currentIndex + 1} of{" "}
             {fullScreenImage.images.length}
           </div>
 
-          {/* Previous Button */}
-          {fullScreenImage.images.length > 1 && (
+          {/* ✨ Enhanced Zoom Controls */}
+          <div
+            className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[100] flex items-center gap-2 bg-black bg-opacity-80 rounded-full px-4 py-2 backdrop-blur-sm border border-white/20"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
+            }}
+          >
             <button
-              aria-label="Previous Image"
-              onClick={() => navigateImage("prev")}
-              className="absolute left-4 top-1/2 transform -translate-y-1/2 z-50 p-3 rounded-full bg-black bg-opacity-50 text-white hover:bg-opacity-70 transition-all duration-200"
+              aria-label="Zoom Out"
+              onClick={handleZoomOut}
+              disabled={zoomLevel <= 0.5}
+              className="p-2 rounded-full text-white hover:bg-white hover:bg-opacity-20 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <ChevronLeft className="h-6 w-6" />
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M20 12H4"
+                />
+              </svg>
             </button>
+
+            <span className="text-white text-sm font-semibold min-w-[3rem] text-center">
+              {Math.round(zoomLevel * 100)}%
+            </span>
+
+            <button
+              aria-label="Zoom In"
+              onClick={handleZoomIn}
+              disabled={zoomLevel >= 3}
+              className="p-2 rounded-full text-white hover:bg-white hover:bg-opacity-20 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+            </button>
+
+            <button
+              aria-label="Reset Zoom"
+              onClick={() => {
+                setZoomLevel(1);
+                setPanPosition({ x: 0, y: 0 });
+              }}
+              className="p-2 rounded-full text-white hover:bg-white hover:bg-opacity-20 transition-all duration-200 ml-2"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"
+                />
+              </svg>
+            </button>
+          </div>
+
+          {/* 🚀 ENHANCED: Navigation Buttons - Always Visible, Work with Zoom */}
+          {fullScreenImage.images.length > 1 && (
+            <>
+              {/* Previous Button - Enhanced */}
+              <button
+                aria-label="Previous Image"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigateImageEnhanced("prev");
+                }}
+                className="fixed left-4 top-1/2 transform -translate-y-1/2 z-[100] p-4 rounded-full bg-black bg-opacity-80 text-white hover:bg-opacity-100 transition-all duration-200 backdrop-blur-sm border border-white/20 group"
+                style={{
+                  boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
+                }}
+              >
+                <ChevronLeft className="h-8 w-8 group-hover:scale-110 transition-transform duration-200" />
+              </button>
+
+              {/* Next Button - Enhanced */}
+              <button
+                aria-label="Next Image"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigateImageEnhanced("next");
+                }}
+                className="fixed right-4 top-1/2 transform -translate-y-1/2 z-[100] p-4 rounded-full bg-black bg-opacity-80 text-white hover:bg-opacity-100 transition-all duration-200 backdrop-blur-sm border border-white/20 group"
+                style={{
+                  boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
+                }}
+              >
+                <ChevronRight className="h-8 w-8 group-hover:scale-110 transition-transform duration-200" />
+              </button>
+            </>
           )}
 
-          {/* Next Button */}
-          {fullScreenImage.images.length > 1 && (
-            <button
-              aria-label="Next Image"
-              onClick={() => navigateImage("next")}
-              className="absolute right-4 top-1/2 transform -translate-y-1/2 z-50 p-3 rounded-full bg-black bg-opacity-50 text-white hover:bg-opacity-70 transition-all duration-200"
-            >
-              <ChevronRight className="h-6 w-6" />
-            </button>
-          )}
-
-          {/* Main Image */}
-          <div className="relative max-w-[90vw] max-h-[90vh] w-full h-full flex items-center justify-center">
+          {/* 🎯 Main Image Container */}
+          <div
+            className="fixed inset-0 flex items-center justify-center"
+            style={{
+              cursor:
+                zoomLevel > 1 ? (isDragging ? "grabbing" : "grab") : "default",
+            }}
+          >
             <img
               src={fullScreenImage.url}
               alt={fullScreenImage.alt}
-              className="max-w-full max-h-full object-contain rounded-lg"
+              className="select-none max-w-none max-h-none"
+              style={{
+                width: "100vw",
+                height: "100vh",
+                objectFit: "contain",
+                objectPosition: "center",
+                transform: `scale(${zoomLevel}) translate(${
+                  panPosition.x / zoomLevel
+                }px, ${panPosition.y / zoomLevel}px)`,
+                transition: isDragging ? "none" : "transform 0.3s ease-out",
+                cursor:
+                  zoomLevel > 1
+                    ? isDragging
+                      ? "grabbing"
+                      : "grab"
+                    : "default",
+              }}
+              onDoubleClick={handleDoubleClick}
+              onLoad={() => setImageLoaded(true)}
               onClick={(e) => e.stopPropagation()}
+              draggable={false}
             />
+
+            {/* Loading indicator */}
+            {!imageLoaded && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-white border-t-transparent"></div>
+              </div>
+            )}
           </div>
 
-          {/* Image Info */}
-          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-50 max-w-md text-center">
-            <div className="px-4 py-2 rounded-full bg-black bg-opacity-50 text-white text-sm">
+          {/* ✨ Enhanced Image Info */}
+          <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-[100] max-w-md text-center">
+            <div className="px-4 py-2 rounded-full bg-black bg-opacity-80 text-white text-sm backdrop-blur-sm border border-white/20">
               {fullScreenImage.alt}
             </div>
           </div>
 
-          {/* Click outside to close */}
-          <div
-            className="absolute inset-0 z-40"
-            onClick={closeImageViewer}
-          ></div>
+          {/* ✨ Enhanced Instructions */}
+          <div className="fixed bottom-16 left-1/2 transform -translate-x-1/2 z-[100]">
+            <div className="px-3 py-1 rounded-full bg-black bg-opacity-70 text-white text-xs backdrop-blur-sm">
+              {zoomLevel > 1 ? (
+                <>
+                  <span className="inline-block mr-2">🖱️ Drag to pan</span>
+                  <span className="inline-block mr-2">
+                    🔍 Double-click to reset
+                  </span>
+                  {fullScreenImage.images.length > 1 && (
+                    <span className="inline-block">⬅️➡️ Navigate images</span>
+                  )}
+                </>
+              ) : (
+                <>
+                  <span className="inline-block mr-2">
+                    🔍 Double-click to zoom
+                  </span>
+                  {fullScreenImage.images.length > 1 && (
+                    <span className="inline-block mr-2">⬅️➡️ Navigate</span>
+                  )}
+                  <span className="inline-block">📱 Swipe on mobile</span>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* 🚀 NEW: Image Navigation Dots - Bottom Center */}
+          {fullScreenImage.images.length > 1 && (
+            <div className="fixed bottom-28 left-1/2 transform -translate-x-1/2 z-[100]">
+              <div className="flex gap-2 bg-black bg-opacity-70 backdrop-blur-sm px-3 py-2 rounded-full border border-white/20">
+                {fullScreenImage.images.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const newImage = fullScreenImage.images[i];
+                      setFullScreenImage({
+                        ...fullScreenImage,
+                        url: newImage.url,
+                        alt: newImage.alt,
+                        currentIndex: i,
+                      });
+                      resetZoomAndPan();
+                    }}
+                    aria-label={`Go to image ${i + 1}`}
+                    className={`w-3 h-3 rounded-full transition-all duration-300 hover:scale-125 ${
+                      i === fullScreenImage.currentIndex
+                        ? "bg-white shadow-lg"
+                        : "bg-white/50 hover:bg-white/80"
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
   );
 };
+
+export default PublicRestaurantView;
