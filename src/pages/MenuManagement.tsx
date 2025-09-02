@@ -48,9 +48,7 @@ export const MenuManagement: React.FC = () => {
   } = useGallery();
 
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
-
   const [editItemData, setEditItemData] = useState<EditingItem | null>(null);
-
   const [newCategoryName, setNewCategoryName] = useState("");
   const [showAddItem, setShowAddItem] = useState(false);
   const [success, setSuccess] = useState("");
@@ -132,7 +130,6 @@ export const MenuManagement: React.FC = () => {
   const handleUpdateItem = async (id: string, updates: MenuItemUpdate) => {
     try {
       await updateItem(id, updates);
-
       setSuccess("Menu item updated successfully!");
       setTimeout(() => setSuccess(""), 3000);
     } catch (error) {
@@ -188,18 +185,18 @@ export const MenuManagement: React.FC = () => {
   }
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Menu Management</h1>
-        <p className="mt-2 text-gray-600">
+    <div className="space-y-4 sm:space-y-8 p-3 sm:p-0">
+      <div className="px-1">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Menu Management</h1>
+        <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-600">
           Manage your restaurant's menu categories and items.
         </p>
       </div>
 
       {success && (
-        <div className="rounded-xl bg-green-50 border border-green-200 p-4">
+        <div className="rounded-xl bg-green-50 border border-green-200 p-3 sm:p-4 mx-1 sm:mx-0">
           <div className="flex">
-            <CheckCircle className="h-5 w-5 text-green-400" />
+            <CheckCircle className="h-5 w-5 text-green-400 flex-shrink-0" />
             <div className="ml-3">
               <p className="text-sm text-green-800">{success}</p>
             </div>
@@ -207,45 +204,45 @@ export const MenuManagement: React.FC = () => {
         </div>
       )}
 
-      {/* Add Category */}
-      <div className="bg-white shadow-lg rounded-2xl border border-gray-100 p-8">
-        <h3 className="text-xl font-semibold text-gray-900 mb-6">
+      {/* Add Category - Mobile Optimized */}
+      <div className="bg-white shadow-lg rounded-2xl border border-gray-100 p-4 sm:p-8 mx-1 sm:mx-0">
+        <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4 sm:mb-6">
           Add New Category
         </h3>
-        <div className="flex gap-4">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
           <input
             type="text"
             value={newCategoryName}
             onChange={(e) => setNewCategoryName(e.target.value)}
-            placeholder="Category name (e.g., Appetizers, Main Course)"
-            className="flex-1 px-4 py-3.5 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white hover:border-gray-400"
+            placeholder="Category name (e.g., Appetizers)"
+            className="flex-1 px-3 sm:px-4 py-3 sm:py-3.5 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white hover:border-gray-400 text-sm sm:text-base"
           />
           <button
             onClick={handleAddCategory}
-            className="inline-flex items-center px-6 py-3.5 border border-transparent text-sm font-semibold rounded-xl shadow-lg text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 hover:shadow-xl"
+            className="inline-flex items-center justify-center px-4 sm:px-6 py-3 sm:py-3.5 border border-transparent text-sm font-semibold rounded-xl shadow-lg text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 hover:shadow-xl whitespace-nowrap min-h-[48px]"
           >
-            <Plus className="h-5 w-5 mr-2" />
+            <Plus className="h-4 sm:h-5 w-4 sm:w-5 mr-2" />
             Add Category
           </button>
         </div>
       </div>
 
-      {/* Menu Images Upload */}
-      <div className="bg-white shadow-lg rounded-2xl border border-gray-100 p-8">
-        <div className="flex items-center gap-3 mb-6">
-          <Images className="h-6 w-6 text-blue-600" />
-          <h3 className="text-xl font-semibold text-gray-900">Menu Images</h3>
+      {/* Menu Images Upload - Mobile Optimized */}
+      <div className="bg-white shadow-lg rounded-2xl border border-gray-100 p-4 sm:p-8 mx-1 sm:mx-0">
+        <div className="flex items-center gap-3 mb-4 sm:mb-6">
+          <Images className="h-5 sm:h-6 w-5 sm:w-6 text-blue-600 flex-shrink-0" />
+          <h3 className="text-lg sm:text-xl font-semibold text-gray-900">Menu Images</h3>
         </div>
-        <p className="text-gray-600 mb-6">
+        <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6 leading-relaxed">
           Upload images that showcase your menu offerings, dishes, and food
           presentation. These images will appear in the menu section alongside
           individual menu items.
         </p>
 
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Upload Section */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-3">
+            <label className="block text-sm font-semibold text-gray-700 mb-2 sm:mb-3">
               Upload Menu Showcase Images
             </label>
             <ImageUploader
@@ -256,27 +253,27 @@ export const MenuManagement: React.FC = () => {
             />
           </div>
 
-          {/* Current Images */}
+          {/* Current Images - Mobile Optimized Grid */}
           {menuImages.length > 0 && (
             <div>
-              <h4 className="text-lg font-medium text-gray-900 mb-4">
+              <h4 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">
                 Current Menu Images ({menuImages.length})
               </h4>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
                 {menuImages.map((image) => (
                   <div
                     key={image.id}
-                    className="relative group bg-gray-50 rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-200"
+                    className="relative group bg-gray-50 rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-200 aspect-square"
                   >
                     <img
                       src={image.image_url}
                       alt={image.alt_text}
-                      className="w-full h-32 object-cover"
+                      className="w-full h-full object-cover"
                     />
                     <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 flex items-center justify-center">
                       <button
                         onClick={() => handleDeleteMenuImage(image.id)}
-                        className="opacity-0 group-hover:opacity-100 p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-200"
+                        className="opacity-0 group-hover:opacity-100 p-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-200 min-h-[44px] min-w-[44px] flex items-center justify-center"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -288,10 +285,10 @@ export const MenuManagement: React.FC = () => {
           )}
 
           {menuImages.length === 0 && (
-            <div className="text-center py-8 bg-gray-50 rounded-xl border border-gray-200">
-              <Images className="mx-auto h-12 w-12 text-gray-400 mb-3" />
-              <p className="text-gray-500">No menu images uploaded yet</p>
-              <p className="text-sm text-gray-400">
+            <div className="text-center py-8 sm:py-10 bg-gray-50 rounded-xl border border-gray-200">
+              <Images className="mx-auto h-10 sm:h-12 w-10 sm:w-12 text-gray-400 mb-3" />
+              <p className="text-gray-500 text-sm sm:text-base font-medium">No menu images uploaded yet</p>
+              <p className="text-xs sm:text-sm text-gray-400 mt-1">
                 Upload some images to showcase your menu offerings
               </p>
             </div>
@@ -299,16 +296,16 @@ export const MenuManagement: React.FC = () => {
         </div>
       </div>
 
-      {/* Categories and Items */}
-      <div className="space-y-8">
+      {/* Categories and Items - Mobile Optimized */}
+      <div className="space-y-4 sm:space-y-8">
         {categories.map((category) => (
           <div
             key={category.id}
-            className="bg-white shadow-lg rounded-2xl border border-gray-100"
+            className="bg-white shadow-lg rounded-2xl border border-gray-100 mx-1 sm:mx-0"
           >
-            <div className="px-8 py-6 border-b border-gray-200 flex items-center justify-between">
+            <div className="px-4 sm:px-8 py-4 sm:py-6 border-b border-gray-200">
               {editingCategory === category.id ? (
-                <div className="flex items-center gap-3 flex-1">
+                <div className="flex items-center gap-3">
                   <input
                     type="text"
                     defaultValue={category.name}
@@ -320,94 +317,95 @@ export const MenuManagement: React.FC = () => {
                         );
                       }
                     }}
-                    className="flex-1 px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white hover:border-gray-400"
+                    className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white hover:border-gray-400 text-sm sm:text-base"
                   />
                   <button
                     onClick={() => setEditingCategory(null)}
-                    className="p-3 text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                    className="p-2.5 sm:p-3 text-gray-400 hover:text-gray-600 transition-colors duration-200 flex-shrink-0 min-h-[44px] min-w-[44px] flex items-center justify-center"
                   >
-                    <X className="h-5 w-5" />
+                    <X className="h-4 sm:h-5 w-4 sm:w-5" />
                   </button>
                 </div>
               ) : (
-                <>
-                  <h3 className="text-xl font-semibold text-gray-900">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900 pr-4 truncate">
                     {category.name}
                   </h3>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                     <button
                       onClick={() => setEditingCategory(category.id)}
-                      className="p-3 text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                      className="p-2.5 sm:p-3 text-gray-400 hover:text-gray-600 transition-colors duration-200 min-h-[44px] min-w-[44px] flex items-center justify-center"
                     >
-                      <Edit2 className="h-5 w-5" />
+                      <Edit2 className="h-4 sm:h-5 w-4 sm:w-5" />
                     </button>
                     <button
                       onClick={() => handleDeleteCategory(category.id)}
-                      className="p-3 text-red-400 hover:text-red-600 transition-colors duration-200"
+                      className="p-2.5 sm:p-3 text-red-400 hover:text-red-600 transition-colors duration-200 min-h-[44px] min-w-[44px] flex items-center justify-center"
                     >
-                      <Trash2 className="h-5 w-5" />
+                      <Trash2 className="h-4 sm:h-5 w-4 sm:w-5" />
                     </button>
                   </div>
-                </>
+                </div>
               )}
             </div>
 
-            <div className="px-8 py-6">
-              {/* Category Items */}
-              <div className="space-y-6">
+            <div className="px-4 sm:px-8 py-4 sm:py-6">
+              {/* Category Items - Mobile Optimized */}
+              <div className="space-y-3 sm:space-y-6">
                 {items
                   .filter((item) => item.category_id === category.id)
                   .map((item) => (
                     <div
                       key={item.id}
-                      className="border border-gray-200 rounded-xl p-6 bg-gray-50 hover:bg-gray-100 transition-colors duration-200"
+                      className="border border-gray-200 rounded-xl p-4 sm:p-6 bg-gray-50 hover:bg-gray-100 transition-colors duration-200"
                     >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h4 className="font-semibold text-gray-900">
+                      <div className="space-y-3 sm:space-y-0 sm:flex sm:items-start sm:justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2 mb-2">
+                            <h4 className="font-semibold text-gray-900 text-sm sm:text-base break-words">
                               {item.name}
                             </h4>
-                            <span className="text-lg font-bold text-green-600">
+                            <span className="text-base sm:text-lg font-bold text-green-600 whitespace-nowrap">
                               ₹{item.price}
                             </span>
                             {item.is_special && (
-                              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800 border border-yellow-200 font-medium">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-yellow-100 text-yellow-800 border border-yellow-200 font-medium">
                                 Special
                               </span>
                             )}
                             {!item.is_available && (
-                              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs bg-red-100 text-red-800 border border-red-200 font-medium">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-800 border border-red-200 font-medium">
                                 Unavailable
                               </span>
                             )}
                           </div>
                           {item.description && (
-                            <p className="text-sm text-gray-600 mb-3">
+                            <p className="text-xs sm:text-sm text-gray-600 mb-3 leading-relaxed break-words">
                               {item.description}
                             </p>
                           )}
                           {item.image_url && (
-                            <img
-                              src={item.image_url}
-                              alt={item.name}
-                              className="mt-3 h-24 w-24 object-cover rounded-xl border border-gray-200"
-                            />
+                            <div className="mt-3">
+                              <img
+                                src={item.image_url}
+                                alt={item.name}
+                                className="h-16 sm:h-24 w-16 sm:w-24 object-cover rounded-xl border border-gray-200"
+                              />
+                            </div>
                           )}
                         </div>
-                        <div className="flex items-center gap-2 ml-6">
+                        <div className="flex sm:flex-col items-center justify-end gap-2 sm:ml-6 flex-shrink-0">
                           <button
-                            // onClick={() => setEditingItem(item.id)}
                             onClick={() => setEditItemData(item)}
-                            className="p-3 text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                            className="p-2.5 sm:p-3 text-gray-400 hover:text-gray-600 transition-colors duration-200 min-h-[44px] min-w-[44px] flex items-center justify-center"
                           >
-                            <Edit2 className="h-5 w-5" />
+                            <Edit2 className="h-4 sm:h-5 w-4 sm:w-5" />
                           </button>
                           <button
                             onClick={() => handleDeleteItem(item.id)}
-                            className="p-3 text-red-400 hover:text-red-600 transition-colors duration-200"
+                            className="p-2.5 sm:p-3 text-red-400 hover:text-red-600 transition-colors duration-200 min-h-[44px] min-w-[44px] flex items-center justify-center"
                           >
-                            <Trash2 className="h-5 w-5" />
+                            <Trash2 className="h-4 sm:h-5 w-4 sm:w-5" />
                           </button>
                         </div>
                       </div>
@@ -415,15 +413,15 @@ export const MenuManagement: React.FC = () => {
                   ))}
               </div>
 
-              {/* Add Item Button */}
+              {/* Add Item Button - Mobile Optimized */}
               <button
                 onClick={() => {
                   setNewItem((prev) => ({ ...prev, category_id: category.id }));
                   setShowAddItem(true);
                 }}
-                className="mt-6 inline-flex items-center px-6 py-3 border border-gray-300 shadow-sm text-sm font-semibold rounded-xl text-gray-700 bg-white hover:bg-gray-50 transition-all duration-200 hover:shadow-md"
+                className="mt-4 sm:mt-6 inline-flex items-center px-4 sm:px-6 py-3 border border-gray-300 shadow-sm text-xs sm:text-sm font-semibold rounded-xl text-gray-700 bg-white hover:bg-gray-50 transition-all duration-200 hover:shadow-md min-h-[48px] w-full sm:w-auto justify-center sm:justify-start"
               >
-                <Plus className="h-5 w-5 mr-2" />
+                <Plus className="h-4 sm:h-5 w-4 sm:w-5 mr-2" />
                 Add Item to {category.name}
               </button>
             </div>
@@ -431,15 +429,15 @@ export const MenuManagement: React.FC = () => {
         ))}
       </div>
 
-      {/* Edit item data */}
+      {/* Edit Item Modal - Mobile Optimized */}
       {editItemData && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-8 border w-full max-w-2xl shadow-2xl rounded-2xl bg-white">
-            <div className="mt-3">
-              <h3 className="text-xl font-semibold text-gray-900 mb-6">
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 p-2 sm:p-4">
+          <div className="relative top-2 sm:top-20 mx-auto border w-full max-w-sm sm:max-w-2xl shadow-2xl rounded-2xl bg-white max-h-[calc(100vh-16px)] sm:max-h-none overflow-y-auto">
+            <div className="p-4 sm:p-8">
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4 sm:mb-6">
                 Edit Menu Item
               </h3>
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Name *
@@ -450,7 +448,7 @@ export const MenuManagement: React.FC = () => {
                     onChange={(e) =>
                       setEditItemData({ ...editItemData, name: e.target.value })
                     }
-                    className="block w-full px-4 py-3.5 border border-gray-300 rounded-xl"
+                    className="block w-full px-3 sm:px-4 py-3 sm:py-3.5 border border-gray-300 rounded-xl text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Enter item name"
                   />
                 </div>
@@ -468,7 +466,7 @@ export const MenuManagement: React.FC = () => {
                       })
                     }
                     rows={3}
-                    className="block w-full px-4 py-3.5 border border-gray-300 rounded-xl"
+                    className="block w-full px-3 sm:px-4 py-3 sm:py-3.5 border border-gray-300 rounded-xl text-sm sm:text-base resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Describe the item..."
                   />
                 </div>
@@ -496,7 +494,7 @@ export const MenuManagement: React.FC = () => {
                         price: isNaN(parsed) ? 0 : parsed,
                       });
                     }}
-                    className="block w-full px-4 py-3.5 border border-gray-300 rounded-xl"
+                    className="block w-full px-3 sm:px-4 py-3 sm:py-3.5 border border-gray-300 rounded-xl text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="0"
                   />
                 </div>
@@ -515,7 +513,7 @@ export const MenuManagement: React.FC = () => {
                   />
                 </div>
 
-                <div className="flex items-center space-x-6">
+                <div className="space-y-3 sm:space-y-0 sm:flex sm:items-center sm:space-x-6">
                   <label className="flex items-center cursor-pointer">
                     <input
                       type="checkbox"
@@ -526,7 +524,7 @@ export const MenuManagement: React.FC = () => {
                           is_available: e.target.checked,
                         })
                       }
-                      className="h-5 w-5 text-blue-600 border-gray-300 rounded"
+                      className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                     />
                     <span className="ml-3 text-sm font-medium text-gray-700">
                       Available
@@ -543,7 +541,7 @@ export const MenuManagement: React.FC = () => {
                           is_special: e.target.checked,
                         })
                       }
-                      className="h-5 w-5 text-blue-600 border-gray-300 rounded"
+                      className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                     />
                     <span className="ml-3 text-sm font-medium text-gray-700">
                       Special
@@ -552,10 +550,10 @@ export const MenuManagement: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-4 mt-8">
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 sm:gap-4 mt-6 sm:mt-8">
                 <button
                   onClick={() => setEditItemData(null)}
-                  className="px-6 py-3 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl"
+                  className="w-full sm:w-auto px-4 sm:px-6 py-3 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors duration-200 min-h-[48px]"
                 >
                   Cancel
                 </button>
@@ -577,7 +575,7 @@ export const MenuManagement: React.FC = () => {
                     handleUpdateItem(editItemData.id, updates);
                     setEditItemData(null);
                   }}
-                  className="px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-xl shadow-lg"
+                  className="w-full sm:w-auto px-4 sm:px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-xl shadow-lg transition-all duration-200 min-h-[48px]"
                 >
                   Save Changes
                 </button>
@@ -587,15 +585,15 @@ export const MenuManagement: React.FC = () => {
         </div>
       )}
 
-      {/* Add Item Modal */}
+      {/* Add Item Modal - Mobile Optimized */}
       {showAddItem && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-8 border w-full max-w-2xl shadow-2xl rounded-2xl bg-white">
-            <div className="mt-3">
-              <h3 className="text-xl font-semibold text-gray-900 mb-6">
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 p-2 sm:p-4">
+          <div className="relative top-2 sm:top-20 mx-auto border w-full max-w-sm sm:max-w-2xl shadow-2xl rounded-2xl bg-white max-h-[calc(100vh-16px)] sm:max-h-none overflow-y-auto">
+            <div className="p-4 sm:p-8">
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4 sm:mb-6">
                 Add New Menu Item
               </h3>
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Name *
@@ -606,7 +604,7 @@ export const MenuManagement: React.FC = () => {
                     onChange={(e) =>
                       setNewItem((prev) => ({ ...prev, name: e.target.value }))
                     }
-                    className="block w-full px-4 py-3.5 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white hover:border-gray-400"
+                    className="block w-full px-3 sm:px-4 py-3 sm:py-3.5 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white hover:border-gray-400 text-sm sm:text-base"
                     placeholder="Enter item name"
                   />
                 </div>
@@ -623,7 +621,7 @@ export const MenuManagement: React.FC = () => {
                       }))
                     }
                     rows={3}
-                    className="block w-full px-4 py-3.5 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white hover:border-gray-400 resize-none"
+                    className="block w-full px-3 sm:px-4 py-3 sm:py-3.5 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white hover:border-gray-400 resize-none text-sm sm:text-base"
                     placeholder="Describe the item..."
                   />
                 </div>
@@ -639,7 +637,6 @@ export const MenuManagement: React.FC = () => {
                     onChange={(e) => {
                       const value = e.target.value;
 
-                      // Allow empty input temporarily
                       if (value === "") {
                         setNewItem((prev) => ({ ...prev, price: 0 }));
                         return;
@@ -655,7 +652,7 @@ export const MenuManagement: React.FC = () => {
                       const cleaned = isNaN(parsed) || parsed < 0 ? 0 : parsed;
                       setNewItem((prev) => ({ ...prev, price: cleaned }));
                     }}
-                    className="block w-full px-4 py-3.5 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white hover:border-gray-400"
+                    className="block w-full px-3 sm:px-4 py-3 sm:py-3.5 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white hover:border-gray-400 text-sm sm:text-base"
                     placeholder="0"
                   />
                 </div>
@@ -672,7 +669,7 @@ export const MenuManagement: React.FC = () => {
                     placeholder="Upload menu item image"
                   />
                 </div>
-                <div className="flex items-center space-x-6">
+                <div className="space-y-3 sm:space-y-0 sm:flex sm:items-center sm:space-x-6">
                   <label className="flex items-center cursor-pointer">
                     <input
                       type="checkbox"
@@ -707,16 +704,16 @@ export const MenuManagement: React.FC = () => {
                   </label>
                 </div>
               </div>
-              <div className="flex justify-end gap-4 mt-8">
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 sm:gap-4 mt-6 sm:mt-8">
                 <button
                   onClick={() => setShowAddItem(false)}
-                  className="px-6 py-3 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors duration-200"
+                  className="w-full sm:w-auto px-4 sm:px-6 py-3 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors duration-200 min-h-[48px]"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleAddItem}
-                  className="px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
+                  className="w-full sm:w-auto px-4 sm:px-6 py-3 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl min-h-[48px]"
                 >
                   Add Item
                 </button>
