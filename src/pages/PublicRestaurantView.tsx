@@ -336,6 +336,19 @@ export const PublicRestaurantView: React.FC = () => {
     }
   };
 
+  // Add this utility function after your imports
+  const formatTime12Hour = (time24h: string): string => {
+  if (!time24h) return "";
+
+  const [hours, minutes] = time24h.split(":").map(Number);
+  const period = hours >= 12 ? "PM" : "AM";
+  const hours12 = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+
+  // Always show minutes with proper padding
+  return `${hours12}:${minutes.toString().padStart(2, "0")} ${period}`;
+};
+
+
   // Auto-advance carousels
   useEffect(() => {
     if (offers.length > 1) {
@@ -356,58 +369,61 @@ export const PublicRestaurantView: React.FC = () => {
   }, [bannerImages.length]);
 
   // Add this useEffect to calculate if restaurant is open now
-useEffect(() => {
-  const checkIfOpen = () => {
-    if (!hours || hours.length === 0) {
-      setIsOpenNow(false);
-      return;
-    }
+  useEffect(() => {
+    const checkIfOpen = () => {
+      if (!hours || hours.length === 0) {
+        setIsOpenNow(false);
+        return;
+      }
 
-    const now = new Date();
-    const currentDay = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
-    const currentTime = now.toTimeString().slice(0, 5); // Get HH:MM format
+      const now = new Date();
+      const currentDay = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+      const currentTime = now.toTimeString().slice(0, 5); // Get HH:MM format
 
-    // Find today's hours
-    const todayHours = hours.find(h => h.day_of_week === currentDay);
-    
-    if (!todayHours || !todayHours.is_open) {
-      setIsOpenNow(false);
-      return;
-    }
+      // Find today's hours
+      const todayHours = hours.find((h) => h.day_of_week === currentDay);
 
-    // Compare current time with opening hours
-    const openTime = todayHours.open_time;
-    const closeTime = todayHours.close_time;
-    
-    // Convert times to minutes for easy comparison
-    const timeToMinutes = (time: any) => {
-      const [hours, minutes] = time.split(':').map(Number);
-      return hours * 60 + minutes;
+      if (!todayHours || !todayHours.is_open) {
+        setIsOpenNow(false);
+        return;
+      }
+
+      // Compare current time with opening hours
+      const openTime = todayHours.open_time;
+      const closeTime = todayHours.close_time;
+
+      // Convert times to minutes for easy comparison
+      const timeToMinutes = (time: any) => {
+        const [hours, minutes] = time.split(":").map(Number);
+        return hours * 60 + minutes;
+      };
+
+      const currentMinutes = timeToMinutes(currentTime);
+      const openMinutes = timeToMinutes(openTime);
+      const closeMinutes = timeToMinutes(closeTime);
+
+      // Handle cases where closing time is after midnight
+      if (closeMinutes < openMinutes) {
+        // Restaurant closes after midnight (e.g., opens at 18:00, closes at 02:00)
+        setIsOpenNow(
+          currentMinutes >= openMinutes || currentMinutes < closeMinutes
+        );
+      } else {
+        // Normal hours (e.g., opens at 09:00, closes at 22:00)
+        setIsOpenNow(
+          currentMinutes >= openMinutes && currentMinutes < closeMinutes
+        );
+      }
     };
-    
-    const currentMinutes = timeToMinutes(currentTime);
-    const openMinutes = timeToMinutes(openTime);
-    const closeMinutes = timeToMinutes(closeTime);
-    
-    // Handle cases where closing time is after midnight
-    if (closeMinutes < openMinutes) {
-      // Restaurant closes after midnight (e.g., opens at 18:00, closes at 02:00)
-      setIsOpenNow(currentMinutes >= openMinutes || currentMinutes < closeMinutes);
-    } else {
-      // Normal hours (e.g., opens at 09:00, closes at 22:00)
-      setIsOpenNow(currentMinutes >= openMinutes && currentMinutes < closeMinutes);
-    }
-  };
 
-  // Check immediately when hours data changes
-  checkIfOpen();
-  
-  // Update every minute to keep status current
-  const interval = setInterval(checkIfOpen, 60000);
-  
-  return () => clearInterval(interval);
-}, [hours]); // Re-run when hours data changes
+    // Check immediately when hours data changes
+    checkIfOpen();
 
+    // Update every minute to keep status current
+    const interval = setInterval(checkIfOpen, 60000);
+
+    return () => clearInterval(interval);
+  }, [hours]); // Re-run when hours data changes
 
   // REPLACE THE EXISTING navigateImage WITH THIS:
   const navigateImageEnhanced = useCallback(
@@ -752,7 +768,7 @@ useEffect(() => {
                         );
                         return todayHours && isOpenNow ? (
                           <span className="ml-1 opacity-70 hidden xl:inline">
-                            • Closes {todayHours.close_time}
+                            • Closes {formatTime12Hour(todayHours.close_time)}
                           </span>
                         ) : null;
                       })()}
@@ -1214,7 +1230,9 @@ useEffect(() => {
                           className="font-medium"
                         >
                           {todayHours.is_open
-                            ? `${todayHours.open_time} - ${todayHours.close_time}`
+                            ? `${formatTime12Hour(
+                                todayHours.open_time
+                              )} - ${formatTime12Hour(todayHours.close_time)}`
                             : "Closed"}
                         </span>
                       </div>
@@ -1866,7 +1884,7 @@ useEffect(() => {
                       </div>
                       <p
                         className="text-sm opacity-80"
-                        style={{ color: currentTheme.colors.textSecondary}}
+                        style={{ color: currentTheme.colors.textSecondary }}
                       >
                         Crafted with love, served with passion
                       </p>
@@ -1891,66 +1909,70 @@ useEffect(() => {
                         className="overflow-x-auto scrollbar-hide"
                       >
                         {/* UPDATED: Category Filter Buttons - Remove Focus Outline */}
-<div className="flex gap-3 pb-2 w-max">
-  <button
-    onClick={() => setSelectedCategory("all")}
-    className={`flex-shrink-0 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-0 ${
-      selectedCategory === "all"
-        ? `bg-gradient-to-r ${currentTheme.gradients.button} text-white shadow-lg`
-        : "border-2 hover:shadow-md"
-    }`}
-    style={
-      selectedCategory !== "all"
-        ? {
-            backgroundColor: currentTheme.colors.background,
-            borderColor: currentTheme.colors.primary + "40",
-            color: currentTheme.colors.text,
-          }
-        : {}
-    }
-  >
-    <span className="flex items-center gap-2 whitespace-nowrap">
-      🍽️ All Items
-      <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs">
-        {filteredItems.length}
-      </span>
-    </span>
-  </button>
+                        <div className="flex gap-3 pb-2 w-max">
+                          <button
+                            onClick={() => setSelectedCategory("all")}
+                            className={`flex-shrink-0 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-0 ${
+                              selectedCategory === "all"
+                                ? `bg-gradient-to-r ${currentTheme.gradients.button} text-white shadow-lg`
+                                : "border-2 hover:shadow-md"
+                            }`}
+                            style={
+                              selectedCategory !== "all"
+                                ? {
+                                    backgroundColor:
+                                      currentTheme.colors.background,
+                                    borderColor:
+                                      currentTheme.colors.primary + "40",
+                                    color: currentTheme.colors.text,
+                                  }
+                                : {}
+                            }
+                          >
+                            <span className="flex items-center gap-2 whitespace-nowrap">
+                              🍽️ All Items
+                              <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs">
+                                {filteredItems.length}
+                              </span>
+                            </span>
+                          </button>
 
-  {categories.map((category) => (
-    <button
-      key={category.id}
-      onClick={() => setSelectedCategory(category.id)}
-      className={`flex-shrink-0 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-0 ${
-        selectedCategory === category.id
-          ? `bg-gradient-to-r ${currentTheme.gradients.button} text-white shadow-lg`
-          : "border-2 hover:shadow-md"
-      }`}
-      style={
-        selectedCategory !== category.id
-          ? {
-              backgroundColor: currentTheme.colors.background,
-              borderColor: currentTheme.colors.primary + "40",
-              color: currentTheme.colors.text,
-            }
-          : {}
-      }
-    >
-      <span className="flex items-center gap-2 whitespace-nowrap">
-        {category.name}
-        <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs">
-          {
-            items.filter(
-              (item) =>
-                item.category_id === category.id && item.is_available
-            ).length
-          }
-        </span>
-      </span>
-    </button>
-  ))}
-</div>
-
+                          {categories.map((category) => (
+                            <button
+                              key={category.id}
+                              onClick={() => setSelectedCategory(category.id)}
+                              className={`flex-shrink-0 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-0 ${
+                                selectedCategory === category.id
+                                  ? `bg-gradient-to-r ${currentTheme.gradients.button} text-white shadow-lg`
+                                  : "border-2 hover:shadow-md"
+                              }`}
+                              style={
+                                selectedCategory !== category.id
+                                  ? {
+                                      backgroundColor:
+                                        currentTheme.colors.background,
+                                      borderColor:
+                                        currentTheme.colors.primary + "40",
+                                      color: currentTheme.colors.text,
+                                    }
+                                  : {}
+                              }
+                            >
+                              <span className="flex items-center gap-2 whitespace-nowrap">
+                                {category.name}
+                                <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs">
+                                  {
+                                    items.filter(
+                                      (item) =>
+                                        item.category_id === category.id &&
+                                        item.is_available
+                                    ).length
+                                  }
+                                </span>
+                              </span>
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     </div>
 
@@ -3073,7 +3095,9 @@ useEffect(() => {
                               }}
                             >
                               {dayHours?.is_open
-                                ? `${dayHours.open_time} - ${dayHours.close_time}`
+                                ? `${formatTime12Hour(
+                                    dayHours.open_time
+                                  )} - ${formatTime12Hour(dayHours.close_time)}`
                                 : "Closed"}
                             </span>
                           </div>
