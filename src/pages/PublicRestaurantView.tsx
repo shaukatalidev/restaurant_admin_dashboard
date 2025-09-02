@@ -116,6 +116,7 @@ interface Offer {
 
 export const PublicRestaurantView: React.FC = () => {
   // Add custom CSS for hiding scrollbars
+  // Add this inside your useEffect that creates styles
   React.useEffect(() => {
     const style = document.createElement("style");
     style.textContent = `
@@ -125,6 +126,22 @@ export const PublicRestaurantView: React.FC = () => {
     }
     .scrollbar-hide::-webkit-scrollbar {
       display: none;
+    }
+    
+    /* Mobile optimizations */
+    @media (max-width: 640px) {
+      .mobile-text-wrap {
+        word-break: break-word;
+        hyphens: auto;
+      }
+      
+      .mobile-no-shrink {
+        flex-shrink: 0;
+      }
+      
+      .mobile-full-width {
+        width: 100% !important;
+      }
     }
   `;
     document.head.appendChild(style);
@@ -2918,6 +2935,7 @@ export const PublicRestaurantView: React.FC = () => {
           )}
 
           {/* Contact & Location */}
+          {/* Contact & Location - MOBILE OPTIMIZED */}
           <div
             id="contact-location"
             className="relative rounded-2xl shadow-2xl border overflow-hidden"
@@ -2930,33 +2948,31 @@ export const PublicRestaurantView: React.FC = () => {
             <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-blue-100/20 to-transparent rounded-full blur-3xl" />
             <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-green-100/20 to-transparent rounded-full blur-2xl" />
 
-            {/* Header Section */}
-            <div className="relative p-8 pb-6">
-              <div className="flex items-center justify-center mb-6">
-                {/* Icon with glow effect */}
+            {/* Header Section - Mobile Responsive */}
+            <div className="relative p-4 sm:p-6 lg:p-8 pb-4 sm:pb-6">
+              <div className="flex items-center justify-center mb-4 sm:mb-6">
                 <div className="relative">
                   <div
                     className="absolute inset-0 rounded-full blur-lg opacity-30"
                     style={{ backgroundColor: currentTheme.colors.primary }}
                   />
                   <div
-                    className="relative w-16 h-16 rounded-full flex items-center justify-center shadow-lg border-2"
+                    className="relative w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center shadow-lg border-2"
                     style={{
                       backgroundColor: currentTheme.colors.surface,
                       borderColor: currentTheme.colors.primary + "30",
                     }}
                   >
                     <MapPin
-                      className="h-8 w-8 animate-pulse"
+                      className="h-6 w-6 sm:h-8 sm:w-8 animate-pulse"
                       style={{ color: currentTheme.colors.primary }}
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Title */}
               <h3
-                className="text-3xl font-bold text-center mb-2 tracking-wide"
+                className="text-2xl sm:text-3xl font-bold text-center mb-2 tracking-wide"
                 style={{
                   color: currentTheme.colors.text,
                   fontFamily: currentTheme.fonts.heading,
@@ -2965,23 +2981,22 @@ export const PublicRestaurantView: React.FC = () => {
                 Contact & Location
               </h3>
 
-              {/* Subtitle with decorative line */}
-              <div className="flex items-center justify-center mb-8">
+              <div className="flex items-center justify-center mb-6 sm:mb-8">
                 <div
-                  className="h-px flex-1 max-w-24"
+                  className="h-px flex-1 max-w-16 sm:max-w-24"
                   style={{
                     background:
                       "linear-gradient(to right, transparent, #d1d5db, transparent)",
                   }}
                 />
                 <span
-                  className="mx-4 text-sm font-medium uppercase tracking-wider"
+                  className="mx-3 sm:mx-4 text-xs sm:text-sm font-medium uppercase tracking-wider"
                   style={{ color: currentTheme.colors.textSecondary }}
                 >
                   Get In Touch
                 </span>
                 <div
-                  className="h-px flex-1 max-w-24"
+                  className="h-px flex-1 max-w-16 sm:max-w-24"
                   style={{
                     background:
                       "linear-gradient(to right, transparent, #d1d5db, transparent)",
@@ -2990,28 +3005,28 @@ export const PublicRestaurantView: React.FC = () => {
               </div>
             </div>
 
-            {/* Main Content - 2 Column Layout */}
-            <div className="relative px-8 pb-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Left Column - Hours Section (Full Height) */}
-                <div className="relative group">
+            {/* Main Content - Mobile First Grid */}
+            <div className="relative px-4 sm:px-6 lg:px-8 pb-6 sm:pb-8">
+              <div className="mobile-contact-grid grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
+                {/* Operating Hours - FIXED MOBILE VERSION */}
+                <div className="relative group order-1 lg:order-1">
                   <div
-                    className="p-6 rounded-xl border-2 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 h-full"
+                    className="mobile-hours-container p-4 sm:p-6 rounded-xl border-2 transition-all duration-300 hover:shadow-lg hover:-translate-y-1 h-full"
                     style={{
                       backgroundColor: currentTheme.colors.background,
                       borderColor: currentTheme.colors.primary + "20",
                     }}
                   >
-                    {/* Icon */}
-                    <div className="flex justify-center mb-4">
+                    {/* Icon - Mobile Responsive */}
+                    <div className="flex justify-center mb-3 sm:mb-4">
                       <div
-                        className="w-12 h-12 rounded-full flex items-center justify-center"
+                        className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center"
                         style={{
                           backgroundColor: currentTheme.colors.success + "10",
                         }}
                       >
                         <svg
-                          className="h-6 w-6"
+                          className="h-5 w-5 sm:h-6 sm:w-6"
                           style={{ color: currentTheme.colors.success }}
                           fill="none"
                           stroke="currentColor"
@@ -3023,10 +3038,10 @@ export const PublicRestaurantView: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Title with Status */}
-                    <div className="text-center mb-6">
+                    {/* Title with Status - Mobile Optimized */}
+                    <div className="text-center mb-4 sm:mb-6">
                       <h4
-                        className="text-xl font-bold mb-3"
+                        className="text-lg sm:text-xl font-bold mb-2 sm:mb-3"
                         style={{
                           color: currentTheme.colors.text,
                           fontFamily: currentTheme.fonts.heading,
@@ -3035,7 +3050,7 @@ export const PublicRestaurantView: React.FC = () => {
                         Operating Hours
                       </h4>
                       <span
-                        className="inline-flex items-center px-4 py-2 rounded-full text-sm font-bold"
+                        className="mobile-status-badge inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-bold"
                         style={{
                           backgroundColor: isOpenNow
                             ? currentTheme.colors.success + "20"
@@ -3046,7 +3061,7 @@ export const PublicRestaurantView: React.FC = () => {
                         }}
                       >
                         <div
-                          className="w-2 h-2 rounded-full mr-2"
+                          className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full mr-1.5 sm:mr-2 animate-pulse"
                           style={{
                             backgroundColor: isOpenNow
                               ? currentTheme.colors.success
@@ -3057,8 +3072,8 @@ export const PublicRestaurantView: React.FC = () => {
                       </span>
                     </div>
 
-                    {/* Hours List */}
-                    <div className="space-y-3">
+                    {/* Hours List - COMPLETELY REWRITTEN FOR MOBILE */}
+                    <div className="mobile-hours-list space-y-2 sm:space-y-3">
                       {DAYS.map((day, index) => {
                         const dayHours = hours.find(
                           (h) => h.day_of_week === index
@@ -3067,8 +3082,10 @@ export const PublicRestaurantView: React.FC = () => {
                         return (
                           <div
                             key={day}
-                            className={`flex justify-between items-center text-sm p-3 rounded-lg ${
-                              isToday ? "shadow-sm" : ""
+                            className={`mobile-hours-item transition-all duration-200 ${
+                              isToday
+                                ? "shadow-sm transform scale-[1.02] sm:scale-[1.01]"
+                                : ""
                             }`}
                             style={{
                               backgroundColor: isToday
@@ -3077,33 +3094,59 @@ export const PublicRestaurantView: React.FC = () => {
                               borderLeft: isToday
                                 ? `3px solid ${currentTheme.colors.primary}`
                                 : "3px solid transparent",
+                              padding: "0.75rem",
+                              borderRadius: "0.5rem",
                             }}
                           >
-                            <span
-                              className="font-medium"
-                              style={{
-                                color: isToday
-                                  ? currentTheme.colors.text
-                                  : currentTheme.colors.textSecondary,
-                                fontWeight: isToday ? "bold" : "normal",
-                              }}
-                            >
-                              {day}
-                            </span>
-                            <span
-                              style={{
-                                color: isToday
-                                  ? currentTheme.colors.text
-                                  : currentTheme.colors.textSecondary,
-                                fontWeight: isToday ? "bold" : "normal",
-                              }}
-                            >
-                              {dayHours?.is_open
-                                ? `${formatTime12Hour(
-                                    dayHours.open_time
-                                  )} - ${formatTime12Hour(dayHours.close_time)}`
-                                : "Closed"}
-                            </span>
+                            {/* Mobile: Stack vertically, Desktop: Side by side */}
+                            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
+                              {/* Day Name */}
+                              <div className="flex items-center justify-between sm:justify-start mb-1 sm:mb-0">
+                                <span
+                                  className="mobile-hours-day font-semibold text-sm sm:text-base"
+                                  style={{
+                                    color: isToday
+                                      ? currentTheme.colors.text
+                                      : currentTheme.colors.textSecondary,
+                                    fontWeight: isToday ? "bold" : "600",
+                                  }}
+                                >
+                                  {day}
+                                </span>
+                                {/* Today Badge - Mobile Only */}
+                                {isToday && (
+                                  <span
+                                    className="sm:hidden text-xs px-2 py-0.5 rounded-full ml-2"
+                                    style={{
+                                      backgroundColor:
+                                        currentTheme.colors.primary + "20",
+                                      color: currentTheme.colors.primary,
+                                    }}
+                                  >
+                                    Today
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Hours */}
+                              <span
+                                className="mobile-hours-time text-xs sm:text-sm block sm:inline"
+                                style={{
+                                  color: isToday
+                                    ? currentTheme.colors.text
+                                    : currentTheme.colors.textSecondary,
+                                  fontWeight: isToday ? "600" : "normal",
+                                }}
+                              >
+                                {dayHours?.is_open
+                                  ? `${formatTime12Hour(
+                                      dayHours.open_time
+                                    )} - ${formatTime12Hour(
+                                      dayHours.close_time
+                                    )}`
+                                  : "Closed"}
+                              </span>
+                            </div>
                           </div>
                         );
                       })}
@@ -3111,37 +3154,35 @@ export const PublicRestaurantView: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Right Column - Contact & Address (Stacked) */}
-                <div className="space-y-6">
-                  {/* Contact Section (Top Right) */}
+                {/* Contact & Address Column - Mobile Optimized */}
+                <div className="space-y-4 sm:space-y-6 order-2 lg:order-2">
+                  {/* Contact Section */}
                   {restaurant?.contact_number && (
                     <div className="relative group">
                       <div
-                        className="p-6 rounded-xl border-2 transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
+                        className="mobile-section-padding p-4 sm:p-6 rounded-xl border-2 transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
                         style={{
                           backgroundColor: currentTheme.colors.background,
                           borderColor: currentTheme.colors.primary + "20",
                         }}
                       >
-                        {/* Icon */}
-                        <div className="flex justify-center mb-4">
+                        <div className="flex justify-center mb-3 sm:mb-4">
                           <div
-                            className="w-12 h-12 rounded-full flex items-center justify-center"
+                            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center"
                             style={{
                               backgroundColor:
                                 currentTheme.colors.accent + "10",
                             }}
                           >
                             <Phone
-                              className="h-6 w-6"
+                              className="h-5 w-5 sm:h-6 sm:w-6"
                               style={{ color: currentTheme.colors.accent }}
                             />
                           </div>
                         </div>
 
-                        {/* Title */}
                         <h4
-                          className="text-xl font-bold text-center mb-4"
+                          className="text-lg sm:text-xl font-bold text-center mb-3 sm:mb-4"
                           style={{
                             color: currentTheme.colors.text,
                             fontFamily: currentTheme.fonts.heading,
@@ -3150,20 +3191,20 @@ export const PublicRestaurantView: React.FC = () => {
                           Contact Us
                         </h4>
 
-                        {/* Phone Number */}
-                        <div className="text-center mb-4">
-                          <span
-                            className="text-lg font-semibold"
+                        <div className="text-center mb-3 sm:mb-4">
+                          <a
+                            href={`tel:${restaurant.contact_number}`}
+                            className="mobile-text-responsive text-base sm:text-lg font-semibold hover:underline transition-colors duration-200"
                             style={{ color: currentTheme.colors.text }}
                           >
                             {restaurant.contact_number}
-                          </span>
+                          </a>
                         </div>
 
-                        {/* Action Button */}
                         <div className="text-center">
-                          <button
-                            className="inline-flex items-center px-6 py-3 rounded-lg text-sm font-semibold transition-all duration-200 hover:shadow-md w-full justify-center"
+                          <a
+                            href={`tel:${restaurant.contact_number}`}
+                            className="inline-flex items-center px-4 py-2.5 sm:px-6 sm:py-3 rounded-lg text-sm font-semibold transition-all duration-200 hover:shadow-md w-full sm:w-auto justify-center"
                             style={{
                               backgroundColor:
                                 currentTheme.colors.accent + "10",
@@ -3172,41 +3213,39 @@ export const PublicRestaurantView: React.FC = () => {
                           >
                             <Phone className="h-4 w-4 mr-2" />
                             Call Now
-                          </button>
+                          </a>
                         </div>
                       </div>
                     </div>
                   )}
 
-                  {/* Address Section (Bottom Right) */}
+                  {/* Address Section */}
                   {location && (
                     <div className="relative group">
                       <div
-                        className="p-6 rounded-xl border-2 transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
+                        className="mobile-section-padding p-4 sm:p-6 rounded-xl border-2 transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
                         style={{
                           backgroundColor: currentTheme.colors.background,
                           borderColor: currentTheme.colors.primary + "20",
                         }}
                       >
-                        {/* Icon */}
-                        <div className="flex justify-center mb-4">
+                        <div className="flex justify-center mb-3 sm:mb-4">
                           <div
-                            className="w-12 h-12 rounded-full flex items-center justify-center"
+                            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center"
                             style={{
                               backgroundColor:
                                 currentTheme.colors.primary + "10",
                             }}
                           >
                             <MapPin
-                              className="h-6 w-6"
+                              className="h-5 w-5 sm:h-6 sm:w-6"
                               style={{ color: currentTheme.colors.primary }}
                             />
                           </div>
                         </div>
 
-                        {/* Title */}
                         <h4
-                          className="text-xl font-bold text-center mb-4"
+                          className="text-lg sm:text-xl font-bold text-center mb-3 sm:mb-4"
                           style={{
                             color: currentTheme.colors.text,
                             fontFamily: currentTheme.fonts.heading,
@@ -3215,9 +3254,8 @@ export const PublicRestaurantView: React.FC = () => {
                           Our Location
                         </h4>
 
-                        {/* Address Text */}
                         <p
-                          className="text-sm text-center leading-relaxed mb-4"
+                          className="mobile-text-responsive text-sm leading-relaxed text-center mb-4 px-2"
                           style={{ color: currentTheme.colors.textSecondary }}
                         >
                           {[
@@ -3231,11 +3269,10 @@ export const PublicRestaurantView: React.FC = () => {
                             .join(", ")}
                         </p>
 
-                        {/* Action Button */}
                         <div className="text-center">
                           <button
                             onClick={handleGetDirections}
-                            className="inline-flex items-center px-6 py-3 rounded-lg text-sm font-semibold transition-all duration-200 hover:shadow-md w-full justify-center"
+                            className="inline-flex items-center px-4 py-2.5 sm:px-6 sm:py-3 rounded-lg text-sm font-semibold transition-all duration-200 hover:shadow-md w-full sm:w-auto justify-center"
                             style={{
                               backgroundColor:
                                 currentTheme.colors.primary + "10",
@@ -3253,14 +3290,14 @@ export const PublicRestaurantView: React.FC = () => {
               </div>
 
               {/* Bottom decorative element */}
-              <div className="flex justify-center mt-8">
+              <div className="flex justify-center mt-6 sm:mt-8">
                 <div className="flex items-center gap-2">
                   <div
                     className="w-2 h-2 rounded-full"
                     style={{ backgroundColor: currentTheme.colors.primary }}
                   />
                   <div
-                    className="w-8 h-px"
+                    className="w-6 sm:w-8 h-px"
                     style={{
                       backgroundColor: currentTheme.colors.primary + "50",
                     }}
@@ -3270,7 +3307,7 @@ export const PublicRestaurantView: React.FC = () => {
                     style={{ borderColor: currentTheme.colors.primary }}
                   />
                   <div
-                    className="w-8 h-px"
+                    className="w-6 sm:w-8 h-px"
                     style={{
                       backgroundColor: currentTheme.colors.primary + "50",
                     }}
