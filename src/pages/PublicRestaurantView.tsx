@@ -355,6 +355,60 @@ export const PublicRestaurantView: React.FC = () => {
     }
   }, [bannerImages.length]);
 
+  // Add this useEffect to calculate if restaurant is open now
+useEffect(() => {
+  const checkIfOpen = () => {
+    if (!hours || hours.length === 0) {
+      setIsOpenNow(false);
+      return;
+    }
+
+    const now = new Date();
+    const currentDay = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    const currentTime = now.toTimeString().slice(0, 5); // Get HH:MM format
+
+    // Find today's hours
+    const todayHours = hours.find(h => h.day_of_week === currentDay);
+    
+    if (!todayHours || !todayHours.is_open) {
+      setIsOpenNow(false);
+      return;
+    }
+
+    // Compare current time with opening hours
+    const openTime = todayHours.open_time;
+    const closeTime = todayHours.close_time;
+    
+    // Convert times to minutes for easy comparison
+    const timeToMinutes = (time: any) => {
+      const [hours, minutes] = time.split(':').map(Number);
+      return hours * 60 + minutes;
+    };
+    
+    const currentMinutes = timeToMinutes(currentTime);
+    const openMinutes = timeToMinutes(openTime);
+    const closeMinutes = timeToMinutes(closeTime);
+    
+    // Handle cases where closing time is after midnight
+    if (closeMinutes < openMinutes) {
+      // Restaurant closes after midnight (e.g., opens at 18:00, closes at 02:00)
+      setIsOpenNow(currentMinutes >= openMinutes || currentMinutes < closeMinutes);
+    } else {
+      // Normal hours (e.g., opens at 09:00, closes at 22:00)
+      setIsOpenNow(currentMinutes >= openMinutes && currentMinutes < closeMinutes);
+    }
+  };
+
+  // Check immediately when hours data changes
+  checkIfOpen();
+  
+  // Update every minute to keep status current
+  const interval = setInterval(checkIfOpen, 60000);
+  
+  return () => clearInterval(interval);
+}, [hours]); // Re-run when hours data changes
+
+
   // REPLACE THE EXISTING navigateImage WITH THIS:
   const navigateImageEnhanced = useCallback(
     (direction: "prev" | "next") => {
