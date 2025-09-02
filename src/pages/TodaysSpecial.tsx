@@ -4,7 +4,7 @@ import { useRestaurant } from '../hooks/useRestaurant';
 import { Save, Calendar, CheckCircle, Star } from 'lucide-react';
 
 export const TodaysSpecial: React.FC = () => {
-  const { items, loading: menuLoading } = useMenu();
+  const { items, loading: menuLoading, updateItem } = useMenu();
   const { restaurant, updateRestaurant, loading: restaurantLoading } = useRestaurant();
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [offerText, setOfferText] = useState('');
@@ -18,7 +18,6 @@ export const TodaysSpecial: React.FC = () => {
   }, [restaurant]);
 
   useEffect(() => {
-    // Get items marked as special
     const specialItems = items.filter(item => item.is_special).map(item => item.id);
     setSelectedItems(specialItems);
   }, [items]);
@@ -39,25 +38,26 @@ export const TodaysSpecial: React.FC = () => {
       // Update restaurant offer text
       await updateRestaurant({ offer_text: offerText });
       
-      // Update menu items special status
-      // Note: In a real app, you'd want to batch these updates
-      for (const item of items) {
+      // ✅ FIX: Uncomment and implement the menu items update
+      const updatePromises = items.map(async (item) => {
         const shouldBeSpecial = selectedItems.includes(item.id);
         if (item.is_special !== shouldBeSpecial) {
-          // This would need to be implemented in the useMenu hook
-          // await updateItem(item.id, { is_special: shouldBeSpecial });
+          return updateItem(item.id, { is_special: shouldBeSpecial }); // ✅ This works now!
         }
-      }
+      });
+
+      // Wait for all updates to complete
+      await Promise.all(updatePromises.filter(Boolean));
       
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (error) {
       console.error('Error updating specials:', error);
+      // Add error state handling if needed
     } finally {
       setSaving(false);
     }
   };
-
   if (menuLoading || restaurantLoading) {
     return (
       <div className="flex items-center justify-center h-64">
