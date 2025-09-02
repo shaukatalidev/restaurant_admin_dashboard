@@ -205,38 +205,38 @@ export const PublicRestaurantView: React.FC = () => {
     setZoomLevel((prev) => Math.max(prev - 0.5, 0.5));
   };
 
-  const handleDoubleClick = () => {
-    if (zoomLevel === 1) {
-      setZoomLevel(2);
-    } else {
-      setZoomLevel(1);
-      setPanPosition({ x: 0, y: 0 });
-    }
-  };
+  // const handleDoubleClick = () => {
+  //   if (zoomLevel === 1) {
+  //     setZoomLevel(2);
+  //   } else {
+  //     setZoomLevel(1);
+  //     setPanPosition({ x: 0, y: 0 });
+  //   }
+  // };
 
-  // Mouse handlers for desktop pan
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (zoomLevel > 1) {
-      setIsDragging(true);
-      setDragStart({
-        x: e.clientX - panPosition.x,
-        y: e.clientY - panPosition.y,
-      });
-    }
-  };
+  // // Mouse handlers for desktop pan
+  // const handleMouseDown = (e: React.MouseEvent) => {
+  //   if (zoomLevel > 1) {
+  //     setIsDragging(true);
+  //     setDragStart({
+  //       x: e.clientX - panPosition.x,
+  //       y: e.clientY - panPosition.y,
+  //     });
+  //   }
+  // };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (isDragging && zoomLevel > 1) {
-      setPanPosition({
-        x: e.clientX - dragStart.x,
-        y: e.clientY - dragStart.y,
-      });
-    }
-  };
+  // const handleMouseMove = (e: React.MouseEvent) => {
+  //   if (isDragging && zoomLevel > 1) {
+  //     setPanPosition({
+  //       x: e.clientX - dragStart.x,
+  //       y: e.clientY - dragStart.y,
+  //     });
+  //   }
+  // };
 
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
+  // const handleMouseUp = () => {
+  //   setIsDragging(false);
+  // };
 
   useEffect(() => {
     if (restaurantName) {
@@ -336,6 +336,23 @@ export const PublicRestaurantView: React.FC = () => {
     }
   };
 
+  const handleGetDirections = () => {
+    if (location) {
+      window.open(location.maps_embed_link, "_blank", "noopener,noreferrer");
+    }
+  };
+
+  const formatTime12Hour = (time24h: string): string => {
+    if (!time24h) return "";
+
+    const [hours, minutes] = time24h.split(":").map(Number);
+    const period = hours >= 12 ? "PM" : "AM";
+    const hours12 = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+
+    // Always show minutes with proper padding
+    return `${hours12}:${minutes.toString().padStart(2, "0")} ${period}`;
+  };
+
   // Auto-advance carousels
   useEffect(() => {
     if (offers.length > 1) {
@@ -356,58 +373,61 @@ export const PublicRestaurantView: React.FC = () => {
   }, [bannerImages.length]);
 
   // Add this useEffect to calculate if restaurant is open now
-useEffect(() => {
-  const checkIfOpen = () => {
-    if (!hours || hours.length === 0) {
-      setIsOpenNow(false);
-      return;
-    }
+  useEffect(() => {
+    const checkIfOpen = () => {
+      if (!hours || hours.length === 0) {
+        setIsOpenNow(false);
+        return;
+      }
 
-    const now = new Date();
-    const currentDay = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
-    const currentTime = now.toTimeString().slice(0, 5); // Get HH:MM format
+      const now = new Date();
+      const currentDay = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+      const currentTime = now.toTimeString().slice(0, 5); // Get HH:MM format
 
-    // Find today's hours
-    const todayHours = hours.find(h => h.day_of_week === currentDay);
-    
-    if (!todayHours || !todayHours.is_open) {
-      setIsOpenNow(false);
-      return;
-    }
+      // Find today's hours
+      const todayHours = hours.find((h) => h.day_of_week === currentDay);
 
-    // Compare current time with opening hours
-    const openTime = todayHours.open_time;
-    const closeTime = todayHours.close_time;
-    
-    // Convert times to minutes for easy comparison
-    const timeToMinutes = (time: any) => {
-      const [hours, minutes] = time.split(':').map(Number);
-      return hours * 60 + minutes;
+      if (!todayHours || !todayHours.is_open) {
+        setIsOpenNow(false);
+        return;
+      }
+
+      // Compare current time with opening hours
+      const openTime = todayHours.open_time;
+      const closeTime = todayHours.close_time;
+
+      // Convert times to minutes for easy comparison
+      const timeToMinutes = (time: any) => {
+        const [hours, minutes] = time.split(":").map(Number);
+        return hours * 60 + minutes;
+      };
+
+      const currentMinutes = timeToMinutes(currentTime);
+      const openMinutes = timeToMinutes(openTime);
+      const closeMinutes = timeToMinutes(closeTime);
+
+      // Handle cases where closing time is after midnight
+      if (closeMinutes < openMinutes) {
+        // Restaurant closes after midnight (e.g., opens at 18:00, closes at 02:00)
+        setIsOpenNow(
+          currentMinutes >= openMinutes || currentMinutes < closeMinutes
+        );
+      } else {
+        // Normal hours (e.g., opens at 09:00, closes at 22:00)
+        setIsOpenNow(
+          currentMinutes >= openMinutes && currentMinutes < closeMinutes
+        );
+      }
     };
-    
-    const currentMinutes = timeToMinutes(currentTime);
-    const openMinutes = timeToMinutes(openTime);
-    const closeMinutes = timeToMinutes(closeTime);
-    
-    // Handle cases where closing time is after midnight
-    if (closeMinutes < openMinutes) {
-      // Restaurant closes after midnight (e.g., opens at 18:00, closes at 02:00)
-      setIsOpenNow(currentMinutes >= openMinutes || currentMinutes < closeMinutes);
-    } else {
-      // Normal hours (e.g., opens at 09:00, closes at 22:00)
-      setIsOpenNow(currentMinutes >= openMinutes && currentMinutes < closeMinutes);
-    }
-  };
 
-  // Check immediately when hours data changes
-  checkIfOpen();
-  
-  // Update every minute to keep status current
-  const interval = setInterval(checkIfOpen, 60000);
-  
-  return () => clearInterval(interval);
-}, [hours]); // Re-run when hours data changes
+    // Check immediately when hours data changes
+    checkIfOpen();
 
+    // Update every minute to keep status current
+    const interval = setInterval(checkIfOpen, 60000);
+
+    return () => clearInterval(interval);
+  }, [hours]); // Re-run when hours data changes
 
   // REPLACE THE EXISTING navigateImage WITH THIS:
   const navigateImageEnhanced = useCallback(
@@ -752,7 +772,7 @@ useEffect(() => {
                         );
                         return todayHours && isOpenNow ? (
                           <span className="ml-1 opacity-70 hidden xl:inline">
-                            • Closes {todayHours.close_time}
+                            • Closes {formatTime12Hour(todayHours.close_time)}
                           </span>
                         ) : null;
                       })()}
@@ -1214,7 +1234,9 @@ useEffect(() => {
                           className="font-medium"
                         >
                           {todayHours.is_open
-                            ? `${todayHours.open_time} - ${todayHours.close_time}`
+                            ? `${formatTime12Hour(
+                                todayHours.open_time
+                              )} - ${formatTime12Hour(todayHours.close_time)}`
                             : "Closed"}
                         </span>
                       </div>
@@ -1866,7 +1888,7 @@ useEffect(() => {
                       </div>
                       <p
                         className="text-sm opacity-80"
-                        style={{ color: currentTheme.colors.textSecondary}}
+                        style={{ color: currentTheme.colors.text }}
                       >
                         Crafted with love, served with passion
                       </p>
@@ -1891,66 +1913,70 @@ useEffect(() => {
                         className="overflow-x-auto scrollbar-hide"
                       >
                         {/* UPDATED: Category Filter Buttons - Remove Focus Outline */}
-<div className="flex gap-3 pb-2 w-max">
-  <button
-    onClick={() => setSelectedCategory("all")}
-    className={`flex-shrink-0 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-0 ${
-      selectedCategory === "all"
-        ? `bg-gradient-to-r ${currentTheme.gradients.button} text-white shadow-lg`
-        : "border-2 hover:shadow-md"
-    }`}
-    style={
-      selectedCategory !== "all"
-        ? {
-            backgroundColor: currentTheme.colors.background,
-            borderColor: currentTheme.colors.primary + "40",
-            color: currentTheme.colors.text,
-          }
-        : {}
-    }
-  >
-    <span className="flex items-center gap-2 whitespace-nowrap">
-      🍽️ All Items
-      <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs">
-        {filteredItems.length}
-      </span>
-    </span>
-  </button>
+                        <div className="flex gap-3 pb-2 w-max">
+                          <button
+                            onClick={() => setSelectedCategory("all")}
+                            className={`flex-shrink-0 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-0 ${
+                              selectedCategory === "all"
+                                ? `bg-gradient-to-r ${currentTheme.gradients.button} text-white shadow-lg`
+                                : "border-2 hover:shadow-md"
+                            }`}
+                            style={
+                              selectedCategory !== "all"
+                                ? {
+                                    backgroundColor:
+                                      currentTheme.colors.background,
+                                    borderColor:
+                                      currentTheme.colors.primary + "40",
+                                    color: currentTheme.colors.text,
+                                  }
+                                : {}
+                            }
+                          >
+                            <span className="flex items-center gap-2 whitespace-nowrap">
+                              🍽️ All Items
+                              <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs">
+                                {filteredItems.length}
+                              </span>
+                            </span>
+                          </button>
 
-  {categories.map((category) => (
-    <button
-      key={category.id}
-      onClick={() => setSelectedCategory(category.id)}
-      className={`flex-shrink-0 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-0 ${
-        selectedCategory === category.id
-          ? `bg-gradient-to-r ${currentTheme.gradients.button} text-white shadow-lg`
-          : "border-2 hover:shadow-md"
-      }`}
-      style={
-        selectedCategory !== category.id
-          ? {
-              backgroundColor: currentTheme.colors.background,
-              borderColor: currentTheme.colors.primary + "40",
-              color: currentTheme.colors.text,
-            }
-          : {}
-      }
-    >
-      <span className="flex items-center gap-2 whitespace-nowrap">
-        {category.name}
-        <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs">
-          {
-            items.filter(
-              (item) =>
-                item.category_id === category.id && item.is_available
-            ).length
-          }
-        </span>
-      </span>
-    </button>
-  ))}
-</div>
-
+                          {categories.map((category) => (
+                            <button
+                              key={category.id}
+                              onClick={() => setSelectedCategory(category.id)}
+                              className={`flex-shrink-0 px-5 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-0 ${
+                                selectedCategory === category.id
+                                  ? `bg-gradient-to-r ${currentTheme.gradients.button} text-white shadow-lg`
+                                  : "border-2 hover:shadow-md"
+                              }`}
+                              style={
+                                selectedCategory !== category.id
+                                  ? {
+                                      backgroundColor:
+                                        currentTheme.colors.background,
+                                      borderColor:
+                                        currentTheme.colors.primary + "40",
+                                      color: currentTheme.colors.text,
+                                    }
+                                  : {}
+                              }
+                            >
+                              <span className="flex items-center gap-2 whitespace-nowrap">
+                                {category.name}
+                                <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs">
+                                  {
+                                    items.filter(
+                                      (item) =>
+                                        item.category_id === category.id &&
+                                        item.is_available
+                                    ).length
+                                  }
+                                </span>
+                              </span>
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     </div>
 
@@ -3073,7 +3099,9 @@ useEffect(() => {
                               }}
                             >
                               {dayHours?.is_open
-                                ? `${dayHours.open_time} - ${dayHours.close_time}`
+                                ? `${formatTime12Hour(
+                                    dayHours.open_time
+                                  )} - ${formatTime12Hour(dayHours.close_time)}`
                                 : "Closed"}
                             </span>
                           </div>
@@ -3206,6 +3234,7 @@ useEffect(() => {
                         {/* Action Button */}
                         <div className="text-center">
                           <button
+                            onClick={handleGetDirections}
                             className="inline-flex items-center px-6 py-3 rounded-lg text-sm font-semibold transition-all duration-200 hover:shadow-md w-full justify-center"
                             style={{
                               backgroundColor:
@@ -4097,7 +4126,7 @@ useEffect(() => {
         </div>
       </div>
 
-      {/* 🚀 ENHANCED: Full-Screen Image Viewer with Zoom Navigation */}
+      {/* Clean Full-Screen Image Viewer - Only Image and Navigation */}
       {fullScreenImage && (
         <div
           className="fixed inset-0 z-[9999] bg-black"
@@ -4113,12 +4142,8 @@ useEffect(() => {
           onTouchStart={handleTouchStartEnhanced}
           onTouchMove={handleTouchMoveEnhanced}
           onTouchEnd={handleTouchEndEnhanced}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
         >
-          {/* ✨ Enhanced Close Button */}
+          {/* Close Button */}
           <button
             aria-label="Close Image Viewer"
             onClick={(e) => {
@@ -4133,94 +4158,15 @@ useEffect(() => {
             <X className="h-6 w-6" />
           </button>
 
-          {/* ✨ Enhanced Image Counter */}
           <div className="fixed top-4 left-4 z-[100] px-4 py-2 rounded-full bg-black bg-opacity-80 text-white text-sm backdrop-blur-sm border border-white/20">
             {fullScreenImage.currentIndex + 1} of{" "}
             {fullScreenImage.images.length}
           </div>
 
-          {/* ✨ Enhanced Zoom Controls */}
-          <div
-            className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[100] flex items-center gap-2 bg-black bg-opacity-80 rounded-full px-4 py-2 backdrop-blur-sm border border-white/20"
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
-            }}
-          >
-            <button
-              aria-label="Zoom Out"
-              onClick={handleZoomOut}
-              disabled={zoomLevel <= 0.5}
-              className="p-2 rounded-full text-white hover:bg-white hover:bg-opacity-20 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M20 12H4"
-                />
-              </svg>
-            </button>
-
-            <span className="text-white text-sm font-semibold min-w-[3rem] text-center">
-              {Math.round(zoomLevel * 100)}%
-            </span>
-
-            <button
-              aria-label="Zoom In"
-              onClick={handleZoomIn}
-              disabled={zoomLevel >= 3}
-              className="p-2 rounded-full text-white hover:bg-white hover:bg-opacity-20 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
-            </button>
-
-            <button
-              aria-label="Reset Zoom"
-              onClick={() => {
-                setZoomLevel(1);
-                setPanPosition({ x: 0, y: 0 });
-              }}
-              className="p-2 rounded-full text-white hover:bg-white hover:bg-opacity-20 transition-all duration-200 ml-2"
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"
-                />
-              </svg>
-            </button>
-          </div>
-
-          {/* 🚀 ENHANCED: Navigation Buttons - Always Visible, Work with Zoom */}
+          {/* Previous/Next Navigation Buttons */}
           {fullScreenImage.images.length > 1 && (
             <>
-              {/* Previous Button - Enhanced */}
+              {/* Previous Button */}
               <button
                 aria-label="Previous Image"
                 onClick={(e) => {
@@ -4235,7 +4181,7 @@ useEffect(() => {
                 <ChevronLeft className="h-8 w-8 group-hover:scale-110 transition-transform duration-200" />
               </button>
 
-              {/* Next Button - Enhanced */}
+              {/* Next Button */}
               <button
                 aria-label="Next Image"
                 onClick={(e) => {
@@ -4252,111 +4198,16 @@ useEffect(() => {
             </>
           )}
 
-          {/* 🎯 Main Image Container */}
-          <div
-            className="fixed inset-0 flex items-center justify-center"
-            style={{
-              cursor:
-                zoomLevel > 1 ? (isDragging ? "grabbing" : "grab") : "default",
-            }}
-          >
+          {/* Main Image */}
+          <div className="fixed inset-0 flex items-center justify-center">
             <img
               src={fullScreenImage.url}
               alt={fullScreenImage.alt}
-              className="select-none max-w-none max-h-none"
-              style={{
-                width: "100vw",
-                height: "100vh",
-                objectFit: "contain",
-                objectPosition: "center",
-                transform: `scale(${zoomLevel}) translate(${
-                  panPosition.x / zoomLevel
-                }px, ${panPosition.y / zoomLevel}px)`,
-                transition: isDragging ? "none" : "transform 0.3s ease-out",
-                cursor:
-                  zoomLevel > 1
-                    ? isDragging
-                      ? "grabbing"
-                      : "grab"
-                    : "default",
-              }}
-              onDoubleClick={handleDoubleClick}
-              onLoad={() => setImageLoaded(true)}
+              className="select-none max-w-full max-h-full object-contain"
               onClick={(e) => e.stopPropagation()}
               draggable={false}
             />
-
-            {/* Loading indicator */}
-            {!imageLoaded && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
-                <div className="animate-spin rounded-full h-12 w-12 border-4 border-white border-t-transparent"></div>
-              </div>
-            )}
           </div>
-
-          {/* ✨ Enhanced Image Info */}
-          <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-[100] max-w-md text-center">
-            <div className="px-4 py-2 rounded-full bg-black bg-opacity-80 text-white text-sm backdrop-blur-sm border border-white/20">
-              {fullScreenImage.alt}
-            </div>
-          </div>
-
-          {/* ✨ Enhanced Instructions */}
-          <div className="fixed bottom-16 left-1/2 transform -translate-x-1/2 z-[100]">
-            <div className="px-3 py-1 rounded-full bg-black bg-opacity-70 text-white text-xs backdrop-blur-sm">
-              {zoomLevel > 1 ? (
-                <>
-                  <span className="inline-block mr-2">🖱️ Drag to pan</span>
-                  <span className="inline-block mr-2">
-                    🔍 Double-click to reset
-                  </span>
-                  {fullScreenImage.images.length > 1 && (
-                    <span className="inline-block">⬅️➡️ Navigate images</span>
-                  )}
-                </>
-              ) : (
-                <>
-                  <span className="inline-block mr-2">
-                    🔍 Double-click to zoom
-                  </span>
-                  {fullScreenImage.images.length > 1 && (
-                    <span className="inline-block mr-2">⬅️➡️ Navigate</span>
-                  )}
-                  <span className="inline-block">📱 Swipe on mobile</span>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* 🚀 NEW: Image Navigation Dots - Bottom Center */}
-          {fullScreenImage.images.length > 1 && (
-            <div className="fixed bottom-28 left-1/2 transform -translate-x-1/2 z-[100]">
-              <div className="flex gap-2 bg-black bg-opacity-70 backdrop-blur-sm px-3 py-2 rounded-full border border-white/20">
-                {fullScreenImage.images.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const newImage = fullScreenImage.images[i];
-                      setFullScreenImage({
-                        ...fullScreenImage,
-                        url: newImage.url,
-                        alt: newImage.alt,
-                        currentIndex: i,
-                      });
-                      resetZoomAndPan();
-                    }}
-                    aria-label={`Go to image ${i + 1}`}
-                    className={`w-3 h-3 rounded-full transition-all duration-300 hover:scale-125 ${
-                      i === fullScreenImage.currentIndex
-                        ? "bg-white shadow-lg"
-                        : "bg-white/50 hover:bg-white/80"
-                    }`}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       )}
     </div>
